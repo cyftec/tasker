@@ -3,7 +3,7 @@ import type { KarmaConfig, ProjectFileNames } from "./karma-types.ts";
 // DO NOT CHANGE exported variable name
 export const projectFileNames = {
   buildable: {
-    mayaSrcDir: "dev",
+    mayaSrcDir: "dev/view/pages",
     pageFile: "page.ts",
     manifestFile: "manifest.ts",
   },
@@ -51,9 +51,10 @@ export const config: KarmaConfig = {
   },
   packageJson: {
     dependencies: {
-      "@mufw/maya": "0.1.32",
+      "@cyftec/kvdb": "^0.1.1",
       "@cyftech/immutjs": "0.1.0",
       "@cyftech/signal": "0.1.15",
+      "@mufw/maya": "0.1.32",
       "@types/web-app-manifest": "1.0.8",
     },
   },
