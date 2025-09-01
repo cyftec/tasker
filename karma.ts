@@ -10,6 +10,8 @@ export const projectFileNames = {
   static: {
     sourceDir: "dev",
     karmaTypesFile: "karma-types.ts",
+    licence: "LICENCE",
+    readMe: "README.md",
   },
   systemGenerated: {
     dsStoreDir: ".DS_Store",
@@ -63,6 +65,8 @@ export const config: KarmaConfig = {
       "deno.enable": false,
       "files.exclude": {
         [projectFileNames.static.karmaTypesFile]: true,
+        [projectFileNames.static.licence]: true,
+        [projectFileNames.static.readMe]: true,
         [projectFileNames.generated.stagingDir]: false,
         [projectFileNames.generated.publishDir]: false,
         [projectFileNames.generated.bunLockFile]: true,
