@@ -65,6 +65,7 @@ input::placeholder {
 .h1dot5 { height: 1.5rem; }
 .w1dot5 { width: 1.5rem; }
 .w4dot50 { width: 12rem; }
+.w-fit-content { width: fit-content; }
 .mnw5 { min-width: 16rem; }
 .mxh5 { max-height: 16rem; }
 .bw1dot5 { border-width: 0.1875rem; }

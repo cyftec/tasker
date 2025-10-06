@@ -1,4 +1,4 @@
-import { tmpl, signal, trap } from "@cyftech/signal";
+import { signal, tmpl, trap } from "@cyftech/signal";
 import { m } from "@mufw/maya";
 import {
   APP_VERSION,
@@ -10,10 +10,14 @@ import {
   getStorageData,
   updateEditPageSettings,
 } from "../../../controllers/localstorage";
+import {
+  goToPrivacyPolicyPage,
+  saveAppDataAsFile,
+} from "../../../controllers/utils";
 import { StorageDetails } from "../../../models/types";
-import { goToPrivacyPolicyPage } from "../../../controllers/utils";
 import { HTMLPage, NavScaffold, Section } from "../../components";
-import { Divider, Icon, Link } from "../../elements";
+import { Button, Divider, Icon, Link } from "../../elements";
+import { AppDataLoaderLink } from "./@components/AppDataLoaderLink";
 import { ToggleSetting } from "./@components/ToggleSetting";
 
 const editPageSettings = signal(INITIAL_SETTINGS.editPage);
@@ -55,8 +59,16 @@ export default HTMLPage({
       children: [
         Section({
           cssClasses: "pb3",
-          title: "Storage space",
-          children: storageSpaceLabel,
+          title: "Data and storage",
+          children: [
+            storageSpaceLabel,
+            Button({
+              cssClasses: "db mv3 ph3 pv2",
+              onTap: saveAppDataAsFile,
+              children: "Download app data",
+            }),
+            AppDataLoaderLink({}),
+          ],
         }),
         Section({
           cssClasses: "pb3",
@@ -120,12 +132,12 @@ export default HTMLPage({
                     size: 21,
                     iconName: "volunteer_activism",
                   }),
-                  "from Bharat",
+                  "in Bharat",
                 ],
               }),
             ]),
             m.Div({
-              class: "pa05 h3 bg-green ba b--blue relative",
+              class: "pa05 h3 bg-green ba b--light-gray relative",
               children: [
                 m.Div({
                   class: "absolute top-0 left-0 right-0 bg-white",

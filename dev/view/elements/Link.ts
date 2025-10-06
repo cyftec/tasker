@@ -13,7 +13,7 @@ type LinkProps = {
 export const Link = component<LinkProps>(
   ({ cssClasses, href, target, onClick, children }) => {
     const linkCss = op(href).or(onClick).ternary("pointer underline", "");
-    const classes = tmpl`noselect ${linkCss} ${cssClasses}`;
+    const classes = tmpl`w-fit-content noselect ${linkCss} ${cssClasses}`;
 
     return m.A({
       onunmount: () => dispose(linkCss, classes),
