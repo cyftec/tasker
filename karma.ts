@@ -67,7 +67,7 @@ export const config: KarmaConfig = {
         [projectFileNames.static.karmaTypesFile]: true,
         [projectFileNames.static.licence]: true,
         [projectFileNames.static.readMe]: true,
-        [projectFileNames.generated.stagingDir]: false,
+        [projectFileNames.generated.stagingDir]: true,
         [projectFileNames.generated.publishDir]: false,
         [projectFileNames.generated.bunLockFile]: true,
         [projectFileNames.generated.bunLockBFile]: true,

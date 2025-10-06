@@ -1,10 +1,16 @@
+const getKeysFromLocalStroage = (): object => {
+  const lsKeys: string[] = [];
+  for (const key in localStorage) {
+    if (localStorage.hasOwnProperty(key)) lsKeys.push(key);
+  }
+  return lsKeys;
+};
+
 const getDataFromStroage = (): object => {
   const data: Record<string, any> = {};
-  for (const key in localStorage) {
-    if (localStorage.hasOwnProperty(key)) {
-      const itemValue = localStorage.getItem(key) as string;
-      data[key] = JSON.parse(itemValue);
-    }
+  for (const key in getKeysFromLocalStroage()) {
+    const itemValue = localStorage.getItem(key) as string;
+    data[key] = JSON.parse(itemValue);
   }
   return data;
 };
@@ -43,5 +49,6 @@ export const saveAppDataAsFile = () => {
 export const loadNewAppDataFromFile = (stringifiedJSON: string) => {
   const data = JSON.parse(stringifiedJSON);
   validateJsonData(data);
+  localStorage.clear();
   saveDataToStroage(data);
 };
