@@ -34,11 +34,11 @@ type GetResponse<ReqIDs, Inflated> = undefined extends ReqIDs
 
 export class Table<Inflated extends InflatedRecord<any>> {
   private kvStore: KvStore;
-  private key: TableKey;
   private isUnstructured: boolean;
   private kvsIdManager: KvStoreIDManager;
   private getForeignTableFromKey: TableGetter;
   private mappings?: RecordMappings<Inflated>;
+  key: TableKey;
   type: TableType;
 
   constructor(
@@ -81,7 +81,7 @@ export class Table<Inflated extends InflatedRecord<any>> {
     let deflatedRecord = this.getDeflatedRecord(id);
     if (!deflatedRecord) return;
 
-    return RecordMapper.fromDbToUiRecord(
+    return RecordMapper.toInflated(
       id,
       deflatedRecord,
       this.isUnstructured,
@@ -134,17 +134,13 @@ export class Table<Inflated extends InflatedRecord<any>> {
     return this.filter(recordMatcher, 1)[0];
   }
 
-  put(record: Inflated): Inflated {
-    let recordID: DbRecordID = record.id;
-    const isNewRecord = RecordValidation.isRecordNew(record);
-    if (isNewRecord) RecordValidation.validateNewRecord(record, this);
-    const sanitisedNewRecord: Inflated = {
-      ...(isNewRecord ? {} : this.getDeflatedRecord(recordID) || {}),
-      ...record,
-    };
+  put(inflatedRecord: Inflated): Inflated {
+    let recordID: DbRecordID = inflatedRecord.id;
+    const isNewRecord = RecordValidation.isRecordNew(inflatedRecord);
+    if (isNewRecord) RecordValidation.validateNewRecord(inflatedRecord, this);
 
-    const kvsMappedRecord = RecordMapper.fromUiToDbRecord(
-      sanitisedNewRecord,
+    const kvsMappedRecord = RecordMapper.toDeflated(
+      inflatedRecord,
       this.isUnstructured,
       this.getForeignTableFromKey,
       this.mappings

@@ -17,18 +17,41 @@ import { Table, TableFieldMapping } from "../table";
 import { RecordValidation } from "../record-validation";
 import { Unstructured } from "../unstructured-record";
 
-export const getJsValue = (
-  dbValue: number | undefined,
-  jsType: DbUnsupportedType
+const isValueDate = (dateOrDateString: any) => {
+  if (dateOrDateString instanceof Date) return true;
+  if (!isNaN(new Date(dateOrDateString).getTime())) return true;
+  return false;
+};
+
+const getDate = (dateOrDateString: string | Date): Date => {
+  if (!isValueDate(dateOrDateString))
+    throw `Input value is not a date or date string`;
+  if (dateOrDateString instanceof Date) return dateOrDateString;
+  return new Date(dateOrDateString);
+};
+
+export const getDeflatedForeignIds = <ForeignDbRecord extends object>(
+  inflatedValue:
+    | WithID<ForeignDbRecord>
+    | WithID<ForeignDbRecord>[]
+    | undefined,
+  foreignTable: Table<InflatedRecord<any>>
 ) => {
-  // dbValue can only be one of DbUnsupportedType
-  if (typeof dbValue === "number" && jsType === "date") {
-    return new Date(dbValue);
+  if (Array.isArray(inflatedValue)) {
+    return inflatedValue.map((rec) => {
+      if (rec.id) return rec.id;
+      if (rec.id === undefined) throw "Invalid extended foreign values list";
+      const newCreatedRecord = foreignTable.put(rec);
+      return newCreatedRecord.id;
+    });
   }
-  if (typeof dbValue === "number" && jsType === "bool") {
-    return !!dbValue;
+  if (typeof inflatedValue === "object" && inflatedValue !== null) {
+    if (inflatedValue.id) return inflatedValue.id;
+    if (inflatedValue.id === undefined) throw "Invalid extended foreign value";
+    const newCreatedRecord = foreignTable.put(inflatedValue);
+    return newCreatedRecord.id;
   }
-  return dbValue;
+  return inflatedValue;
 };
 
 type ReturnType<In> = In extends Date
@@ -36,49 +59,73 @@ type ReturnType<In> = In extends Date
   : In extends boolean
   ? NumBoolean
   : In;
-export const getDbValue = <ForeignDbRecord extends Date | boolean | undefined>(
-  jsValue: ForeignDbRecord
+export const getDeflatedUnsupportedValues = <
+  ForeignDbRecord extends Date | boolean | undefined
+>(
+  inflatedValue: ForeignDbRecord,
+  unsupportedType: DbUnsupportedType
 ): ReturnType<ForeignDbRecord> => {
-  if (jsValue instanceof Date) {
-    return jsValue.getTime() as ReturnType<typeof jsValue>;
+  if (unsupportedType === "date") {
+    console.log(typeof inflatedValue);
+    console.log(inflatedValue);
   }
-  if (typeof jsValue === "boolean") {
-    return +jsValue as ReturnType<typeof jsValue>;
+  if (unsupportedType === "date" && isValueDate(inflatedValue)) {
+    return getDate(inflatedValue as string | Date).getTime() as ReturnType<
+      typeof inflatedValue
+    >;
   }
-  return jsValue as ReturnType<typeof jsValue>;
+  if (unsupportedType === "date" && Array.isArray(inflatedValue)) {
+    return inflatedValue.map((d) => {
+      if (!isValueDate(d)) throw `Invalid values in supposedly array of dates.`;
+      return d.getTime();
+    }) as ReturnType<typeof inflatedValue>;
+  }
+  if (unsupportedType === "bool" && typeof inflatedValue === "boolean") {
+    return +inflatedValue as ReturnType<typeof inflatedValue>;
+  }
+  if (unsupportedType === "bool" && Array.isArray(inflatedValue)) {
+    return inflatedValue.map((b) => {
+      if (!(typeof b === "boolean"))
+        throw `Invalid values in supposedly array of booleans`;
+      return +b;
+    }) as ReturnType<typeof inflatedValue>;
+  }
+  return inflatedValue as ReturnType<typeof inflatedValue>;
 };
 
-export const getExtendedValue = (
-  table: Table<InflatedRecord<any>>,
-  rawValue?: DbRecordID | DbRecordID[]
+export const getInflatedForeignRecords = (
+  deflatedValue: DbRecordID | DbRecordID[],
+  table: Table<InflatedRecord<any>>
 ) => {
-  // rawValue can only be undefined | DbRecordID | DbRecordID[]
-  if (typeof rawValue === "number") return table.get(rawValue as DbRecordID);
-  if (Array.isArray(rawValue)) {
-    return rawValue.length ? table.get(rawValue as DbRecordID[]) : rawValue;
+  // deflatedValue can only be undefined | DbRecordID | DbRecordID[]
+  if (typeof deflatedValue === "number")
+    return table.get(deflatedValue as DbRecordID);
+  if (Array.isArray(deflatedValue)) {
+    return deflatedValue.length
+      ? table.get(deflatedValue as DbRecordID[])
+      : deflatedValue;
   }
-  return rawValue;
+  return deflatedValue;
 };
 
-export const getForeignDbRecordIdValues = <ForeignDbRecord extends object>(
-  foreignTable: Table<InflatedRecord<any>>,
-  extendedValue: WithID<ForeignDbRecord> | WithID<ForeignDbRecord>[] | undefined
+export const getInflatedUnsupportedValues = (
+  deflatedValue: number | undefined,
+  unsupportedType: DbUnsupportedType
 ) => {
-  if (Array.isArray(extendedValue)) {
-    return extendedValue.map((rec) => {
-      if (rec.id) return rec.id;
-      if (rec.id === undefined) throw "Invalid extended foreign values list";
-      const newCreatedRecord = foreignTable.put(rec);
-      return newCreatedRecord.id;
-    });
+  // deflatedValue can only be one of DbUnsupportedType
+  if (unsupportedType === "date" && typeof deflatedValue === "number") {
+    return new Date(deflatedValue);
   }
-  if (typeof extendedValue === "object" && extendedValue !== null) {
-    if (extendedValue.id) return extendedValue.id;
-    if (extendedValue.id === undefined) throw "Invalid extended foreign value";
-    const newCreatedRecord = foreignTable.put(extendedValue);
-    return newCreatedRecord.id;
+  if (unsupportedType === "date" && Array.isArray(deflatedValue)) {
+    return deflatedValue.map((date) => new Date(date));
   }
-  return extendedValue;
+  if (unsupportedType === "bool" && typeof deflatedValue === "number") {
+    return !!deflatedValue;
+  }
+  if (unsupportedType === "bool" && Array.isArray(deflatedValue)) {
+    return deflatedValue.map((numBool) => !!numBool);
+  }
+  return deflatedValue;
 };
 
 export const getMappedObject = (
@@ -118,7 +165,7 @@ export const getMappedObject = (
 };
 
 export class RecordMapper {
-  static fromUiToDbRecord<T extends InflatedRecord<any>>(
+  static toDeflated<T extends InflatedRecord<any>>(
     record: T,
     isUnstructured: boolean,
     getForeignTableFromKey: (tableKey: TableKey) => Table<InflatedRecord<any>>,
@@ -141,20 +188,25 @@ export class RecordMapper {
       ([keysPath, mapping]: [string, TableFieldMapping]) => {
         if (mapping.type === "foreigntable") {
           const foreignTable = getForeignTableFromKey(mapping.tableKey);
-          record = getMappedObject(keysPath, record, (rawValue) =>
-            getForeignDbRecordIdValues(foreignTable, rawValue)
+          record = getMappedObject(keysPath, record, (inflatedValue) =>
+            getDeflatedForeignIds(inflatedValue, foreignTable)
           ) as T;
         }
 
         if (DB_UNSUPPORTED_TYPES.includes(mapping.type as DbUnsupportedType)) {
-          record = getMappedObject(keysPath, record, getDbValue) as T;
+          record = getMappedObject(keysPath, record, (inflatedValue) =>
+            getDeflatedUnsupportedValues(
+              inflatedValue,
+              mapping.type as DbUnsupportedType
+            )
+          ) as T;
         }
       }
     );
     return record as DeflatedRecord<T>;
   }
 
-  static fromDbToUiRecord<T>(
+  static toInflated<T>(
     id: DbRecordID,
     record: T,
     isUnstructured: boolean,
@@ -176,14 +228,23 @@ export class RecordMapper {
       ([keysPath, mapping]: [string, TableFieldMapping]) => {
         if (mapping.type === "foreigntable") {
           const foreignTable = getForeignTableFromKey(mapping.tableKey);
-          record = getMappedObject(keysPath, record as object, (rawValue) =>
-            getExtendedValue(foreignTable, rawValue)
+          record = getMappedObject(
+            keysPath,
+            record as object,
+            (deflatedValue) =>
+              getInflatedForeignRecords(deflatedValue, foreignTable)
           ) as T;
         }
 
         if (DB_UNSUPPORTED_TYPES.includes(mapping.type as DbUnsupportedType)) {
-          record = getMappedObject(keysPath, record as object, (rawValue) =>
-            getJsValue(rawValue, mapping.type as DbUnsupportedType)
+          record = getMappedObject(
+            keysPath,
+            record as object,
+            (deflatedValue) =>
+              getInflatedUnsupportedValues(
+                deflatedValue,
+                mapping.type as DbUnsupportedType
+              )
           ) as T;
         }
       }
