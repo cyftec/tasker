@@ -15,7 +15,7 @@ import {
   isLastInteractionLongBack,
   updateHabitStatus,
 } from "../../controllers/transforms";
-import { HabitUI } from "../../models/types";
+import { HabitVM } from "../../models/v0";
 import { goToNewHabitsPage } from "../../controllers/utils";
 import {
   AddHabitButton,
@@ -44,7 +44,7 @@ const habitsStatusLabel = compute(
   selectedDate
 );
 const createNewHabitBtnLabel = compute(
-  (habits: HabitUI[]) =>
+  (habits: HabitVM[]) =>
     habits.length === 0
       ? "No habit for the day! Add one."
       : habits.length < 5
@@ -74,14 +74,16 @@ const onHabitStatusChange = (levelCode: number) => {
 
 const transitionToHabitsPage = () => {
   itsTimeToRefresh.value = isLastInteractionLongBack();
+  const progressMax = 100;
+  const progressInterval = 10;
   const tickerID = setInterval(() => {
     progress.value += 1;
-    if (progress.value >= 100) {
+    if (progress.value >= progressMax) {
       clearInterval(tickerID);
       itsTimeToRefresh.value = false;
       updateInteractionTime(new Date());
     }
-  }, 30);
+  }, progressInterval);
 };
 
 const triggerPageDataRefresh = () => {

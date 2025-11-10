@@ -5,12 +5,12 @@ import {
   getWeekdayName,
   getWeekwiseStatus,
 } from "../../../../../controllers/transforms";
-import { DailyStatus, HabitUI } from "../../../../../models/types";
+import { DailyStatus, HabitVM } from "../../../../../models/v0";
 import { ColorDot } from "../../../../components";
 
 type CalendarProps = {
   cssClasses?: string;
-  habit: HabitUI;
+  habit: HabitVM;
   onDateClick: (dayStatus: DailyStatus) => void;
 };
 

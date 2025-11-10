@@ -12,8 +12,8 @@ import {
 } from "../../../controllers/localstorage";
 import { checkNoHabitsInStore } from "../../../controllers/localstorage/habits";
 import { getSortedHabits } from "../../../controllers/transforms";
-import { HabitUI } from "../../../models/types";
 import { goToHabitPage } from "../../../controllers/utils";
+import { HabitVM } from "../../../models/v0";
 import {
   AddHabitButton,
   HabitCard,
@@ -36,7 +36,7 @@ const totalOverviewMonths = compute(
   (i: number) => HOMEPAGE_OVERVIEW_TABS[i].months,
   tabIndex
 );
-const habits = signal<HabitUI[]>([]);
+const habits = signal<HabitVM[]>([]);
 const sortedHabits = compute(
   getSortedHabits,
   habits,
@@ -47,7 +47,7 @@ const [sortedStoppedHabits, sortedActiveHabits] = trap(sortedHabits).partition(
   (hab) => hab.isStopped
 );
 
-const onSortOptionChange = (optionIndex) => {
+const onSortOptionChange = (optionIndex: number) => {
   updateHabitsPageSettings({
     ...pageSettings.value,
     sortOptionIndex: optionIndex,

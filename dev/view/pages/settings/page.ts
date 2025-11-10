@@ -14,7 +14,7 @@ import {
   goToPrivacyPolicyPage,
   saveAppDataAsFile,
 } from "../../../controllers/utils";
-import { StorageDetails } from "../../../models/types";
+import { StorageDetails } from "../../../models/v0";
 import { HTMLPage, NavScaffold, Section } from "../../components";
 import { Button, Divider, Icon, Link } from "../../elements";
 import { AppDataLoaderLink } from "./@components/AppDataLoaderLink";

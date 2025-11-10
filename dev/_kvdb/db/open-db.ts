@@ -11,17 +11,17 @@ export type DatabaseSchema<> = {
   };
 };
 
-export type DB<Schema extends DatabaseSchema> = {
+export type DatabaseInstance<Schema extends DatabaseSchema> = {
   [TableName in keyof Schema]: Table<Schema[TableName]["structure"]>;
 };
 
 export const openDb = <Schema extends DatabaseSchema>(
   schema: Schema,
-  migrations?: () => void,
+  migration?: () => void,
   kvStore?: KvStore
-): DB<Schema> => {
+): DatabaseInstance<Schema> => {
   const store: KvStore = kvStore || LOCALSTORAGE_AS_KVSTORE;
-  const db: DB<Schema> = {} as DB<Schema>;
+  const dbInstance: DatabaseInstance<Schema> = {} as DatabaseInstance<Schema>;
 
   const getTableFromTableKey = (key: TableKey) => {
     const tableName = Object.keys(schema).find(
@@ -31,7 +31,7 @@ export const openDb = <Schema extends DatabaseSchema>(
       throw `Invalid key '${key}' passed to find table name from schema - '${JSON.stringify(
         schema
       )}'`;
-    const table = db[tableName];
+    const table = dbInstance[tableName];
     if (!table) throw `Table with key '${key}' not found in the DB`;
     return table;
   };
@@ -46,11 +46,12 @@ export const openDb = <Schema extends DatabaseSchema>(
         getTableFromTableKey,
         mappings
       );
-      db[tableName as keyof DB<Schema>] = table;
+      dbInstance[tableName as keyof DatabaseInstance<Schema>] = table;
     } catch (error) {
       console.log(`error happened during building table - ${tableName}`);
     }
   });
+  if (migration) migration();
 
-  return db as DB<Schema>;
+  return dbInstance as DatabaseInstance<Schema>;
 };

@@ -1,6 +1,4 @@
-import { Structured } from "@cyftec/kvdb";
-
-export type LocalSettings = {
+export type SettingsV0 = {
   id: "local-settings";
   habitsPage: {
     tabIndex: number;
@@ -11,7 +9,8 @@ export type LocalSettings = {
     showFullCustomisation: boolean;
   };
 };
-export type Analytics = {
+
+export type AnalyticsV0 = {
   id: "analytics";
   lastInteraction: number;
 };
@@ -21,9 +20,3 @@ export type StorageDetails = {
   spaceLeft: number;
   documents: Record<string, number>;
 };
-
-export type SettingType = "HABITS_PAGE" | "EDIT_PAGE";
-
-export type SingleSetting = {};
-
-// export type Setting = Structured<Record<>>;

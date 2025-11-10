@@ -6,14 +6,14 @@ import {
   getDateWindow,
   getMonthFirstDates,
 } from "../../controllers/transforms";
-import { HabitUI } from "../../models/types";
+import { HabitVM } from "../../models/v0";
 import { handleTap } from "../../controllers/utils";
 import { Icon } from "../elements";
 import { MonthMap } from "./MonthMap";
 
 type HabitCardProps = {
   cssClasses?: string;
-  habit: HabitUI;
+  habit: HabitVM;
   months: number;
   onClick: () => void;
 };
@@ -22,7 +22,7 @@ export const HabitCard = component<HabitCardProps>(
   ({ cssClasses, habit, months, onClick }) => {
     const { milestones, title, colorIndex, levels } = trap(habit).props;
     const completion = compute(
-      (months: number, habit: HabitUI) => {
+      (months: number, habit: HabitVM) => {
         const { startDate, endDate } = getDateWindow(months);
         return getCompletion(habit, startDate, endDate).percent;
       },

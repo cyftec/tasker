@@ -4,12 +4,12 @@ import {
   getHabitStatusBetweenDates,
   getMonthName,
 } from "../../controllers/transforms";
-import { HabitUI } from "../../models/types";
+import { HabitVM } from "../../models/v0";
 import { ColorDot } from "./ColorDot";
 
 type MonthMapProps = {
   cssClasses?: string;
-  habit: HabitUI;
+  habit: HabitVM;
   date: Date;
   colorIndex: number;
   totalLevels: number;
@@ -26,7 +26,7 @@ export const MonthMap = component<MonthMapProps>(
         habit.value.tracker,
         firstDay,
         lastDay
-      ).map((s) => ({ ...s, level: s.level.code }));
+      ).map((s) => ({ ...s, level: s.level.code, key: s.date.getTime() }));
     });
     const classes = tmpl`flex items-center ${cssClasses}`;
     const monthLabel = derive(() => getMonthName(date.value.getMonth(), 3));

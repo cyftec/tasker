@@ -1,10 +1,10 @@
 import { compute, dispose, op, tmpl, trap } from "@cyftech/signal";
 import { component, m } from "@mufw/maya";
-import { AchievedMilestone, MilestonesUI } from "../../models/types";
+import { AchievedMilestone, MilestonesVM } from "../../models/v0";
 
 type GoalStatusProps = {
   cssClasses?: string;
-  milestones: MilestonesUI;
+  milestones: MilestonesVM;
   achievedMilestone: AchievedMilestone;
   completionPercent: number;
 };

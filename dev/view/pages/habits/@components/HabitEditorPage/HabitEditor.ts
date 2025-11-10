@@ -10,10 +10,10 @@ import {
   levelTextboxDisability,
 } from "../../../../../controllers/transforms";
 import {
-  HabitUI,
-  MilestonesUI,
-  WeekdayFrequency,
-} from "../../../../../models/types";
+  HabitVM,
+  MilestonesVM,
+  WeekScheduleV0,
+} from "../../../../../models/v0";
 import { handleTap } from "../../../../../controllers/utils";
 import {
   AddRemoveButton,
@@ -25,11 +25,11 @@ import {
 
 type HabitEditorProps = {
   cssClasses?: string;
-  editableHabit?: HabitUI;
-  editedHabit: Signal<HabitUI>;
+  editableHabit?: HabitVM;
+  editedHabit: Signal<HabitVM>;
   hideDescriptions?: boolean;
   showFullCustomisations?: boolean;
-  onChange: (updatedHabit: HabitUI) => void;
+  onChange: (updatedHabit: HabitVM) => void;
 };
 
 export const HabitEditor = component<HabitEditorProps>(
@@ -72,7 +72,7 @@ export const HabitEditor = component<HabitEditorProps>(
       }
 
       const updatedFreq = everyDay.value
-        ? (frequency.value.map((_) => 0) as WeekdayFrequency)
+        ? (frequency.value.map((_) => 0) as WeekScheduleV0)
         : frequency.value;
       updatedFreq[dayIndex] = everyDay.value
         ? 1
@@ -117,7 +117,7 @@ export const HabitEditor = component<HabitEditorProps>(
     const updateMilestone = (value: number, index: number) => {
       if (index < 0 || index > 2)
         throw `Incorrect index of milestone passed. Milestone values should not be more than 3.`;
-      const updatedMilestones: MilestonesUI = [...editedHabit.value.milestones];
+      const updatedMilestones: MilestonesVM = [...editedHabit.value.milestones];
       updatedMilestones[index] = {
         ...updatedMilestones[index],
         percent: value,
@@ -268,7 +268,7 @@ export const HabitEditor = component<HabitEditorProps>(
                 }),
               }),
               Section({
-                title: "Habit completion goal",
+                title: "HabitV0 completion goal",
                 hideDescription: hideDescriptions,
                 description: tmpl`
                   Goals are something for long-term. Let's say based on below table, after

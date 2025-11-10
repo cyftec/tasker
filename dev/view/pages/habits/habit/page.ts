@@ -11,7 +11,7 @@ import {
   getWeekwiseStatus,
   updateHabitStatus,
 } from "../../../../controllers/transforms";
-import { HabitUI } from "../../../../models/types";
+import { HabitVM } from "../../../../models/v0";
 import { goToHabitEditPage } from "../../../../controllers/utils";
 import {
   ColorDot,
@@ -26,7 +26,7 @@ import { Button, Icon, Scaffold } from "../../../elements";
 import { Calendar } from "./@components";
 
 const error = signal("");
-const habit = signal<HabitUI>(getNewHabit());
+const habit = signal<HabitVM>(getNewHabit());
 const {
   id: habitId,
   title: pageTitle,

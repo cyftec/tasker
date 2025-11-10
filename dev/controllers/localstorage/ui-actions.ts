@@ -6,12 +6,7 @@ import {
   getHabitData,
   getHabitUI,
 } from "../transforms";
-import {
-  Habit,
-  HabitUI,
-  LocalSettings,
-  StorageDetails,
-} from "../../models/types";
+import { HabitV0, HabitVM, SettingsV0, StorageDetails } from "../../models/v0";
 import { fetchAnalytics, updateAnalytics } from "./analytics";
 import {
   fetchHabitsFromStore,
@@ -21,6 +16,8 @@ import {
   saveHabitInStore,
 } from "./habits";
 import { fetchSettings, getStorageSpaceData, updateSettings } from "./settings";
+import { Setting } from "../../models/v1/data-models";
+import { db } from "../databases/db";
 
 /**
  *
@@ -33,16 +30,21 @@ export const getLastInteraction = () => {
   if (!phase.currentIs("run")) {
     return INITIAL_ANALYTICS.lastInteraction;
   }
-  const currentAnalytics = fetchAnalytics();
-  return currentAnalytics.lastInteraction;
+  const [analytics] = db.analytics.get();
+  if (!analytics) throw `Failed to fetch analytics from DB`;
+  return analytics.value.lastInteraction;
 };
 
 export const updateInteractionTime = (date: Date) => {
-  const currentAnalytics = fetchAnalytics();
-  updateAnalytics({
-    ...currentAnalytics,
-    lastInteraction: date.getTime(),
-  });
+  const [analytics] = db.analytics.get();
+  if (!analytics) throw `Failed to fetch analytics from DB`;
+  console.log(analytics);
+  const updated = {
+    ...analytics,
+    value: { lastInteraction: date.getTime() },
+  };
+  console.log(updated);
+  db.analytics.put(updated);
 };
 
 /**
@@ -52,34 +54,32 @@ export const updateInteractionTime = (date: Date) => {
  *    SETTINGS
  */
 
-export const getHabitsPageSettings = (): LocalSettings["habitsPage"] => {
-  const settings = fetchSettings();
-  return settings.habitsPage;
+export const getHabitsPageSettings = (): Setting<"habitsPage">["data"] => {
+  const settings = db.settings.find((s) => s.page === "habitsPage");
+  if (!settings) throw `Failed to fetch habits-page settings from DB`;
+  return settings.data as Setting<"habitsPage">["data"];
 };
 
 export const updateHabitsPageSettings = (
-  habitsPageSettings: LocalSettings["habitsPage"]
+  habitsPageSettingsData: Setting<"habitsPage">["data"]
 ) => {
-  const settings = fetchSettings();
-  updateSettings({
-    ...settings,
-    habitsPage: habitsPageSettings,
-  });
+  const settings = db.settings.find((s) => s.page === "habitsPage");
+  if (!settings) throw `Failed to fetch habits-page settings from DB`;
+  db.settings.put({ ...settings, ...habitsPageSettingsData });
 };
 
-export const getEditPageSettings = (): LocalSettings["editPage"] => {
-  const settings = fetchSettings();
-  return settings.editPage;
+export const getEditPageSettings = (): Setting<"editPage">["data"] => {
+  const settings = db.settings.find((s) => s.page === "editPage");
+  if (!settings) throw `Failed to fetch edit-page settings from DB`;
+  return settings.data as Setting<"editPage">["data"];
 };
 
 export const updateEditPageSettings = (
-  editPageSettings: LocalSettings["editPage"]
+  editPageSettingsData: Setting<"editPage">["data"]
 ) => {
-  const settings = fetchSettings();
-  updateSettings({
-    ...settings,
-    editPage: editPageSettings,
-  });
+  const settings = db.settings.find((s) => s.page === "editPage");
+  if (!settings) throw `Failed to fetch edit-page settings from DB`;
+  db.settings.put({ ...settings, ...editPageSettingsData });
 };
 
 export const getStorageData = (): StorageDetails => getStorageSpaceData();
@@ -91,7 +91,7 @@ export const getStorageData = (): StorageDetails => getStorageSpaceData();
  *    HABITS
  */
 
-export const fetchHabit = (habitId: number): HabitUI => {
+export const fetchHabit = (habitId: number): HabitVM => {
   const habitID = getHabitStoreRecordKey(habitId);
   const habit = fetchHabitWithKey(habitID);
 
@@ -99,13 +99,13 @@ export const fetchHabit = (habitId: number): HabitUI => {
   return getHabitUI(habit);
 };
 
-export const fetchHabits = (): HabitUI[] => {
-  const habits: Habit[] = fetchHabitsFromStore();
+export const fetchHabits = (): HabitVM[] => {
+  const habits: HabitV0[] = fetchHabitsFromStore();
   return habits.map((habit) => getHabitUI(habit));
 };
 
-export const findHabit = (habitTitle: string): HabitUI | undefined => {
-  const habits: Habit[] = fetchHabitsFromStore();
+export const findHabit = (habitTitle: string): HabitVM | undefined => {
+  const habits: HabitV0[] = fetchHabitsFromStore();
   const foundHabit = habits.find(
     (habit) => habit.title.trim() === habitTitle.trim()
   );
@@ -161,12 +161,12 @@ export const intializeTrackerEmptyDays = () => {
   }
 };
 
-export const saveHabit = (habit: HabitUI) => {
-  const habitData: Habit = getHabitData(habit);
+export const saveHabit = (habit: HabitVM) => {
+  const habitData: HabitV0 = getHabitData(habit);
   saveHabitInStore(habitData);
 };
-export const stopHabit = (habit: HabitUI) => {
-  const updatedHabit: HabitUI = { ...habit, isStopped: true };
+export const stopHabit = (habit: HabitVM) => {
+  const updatedHabit: HabitVM = { ...habit, isStopped: true };
   saveHabit(updatedHabit);
 };
 export const deleteHabit = (habitId: number) =>

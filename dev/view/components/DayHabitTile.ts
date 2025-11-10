@@ -1,12 +1,12 @@
 import { derive, dispose, op, tmpl, trap } from "@cyftech/signal";
 import { component, m } from "@mufw/maya";
 import { getDayStatus, getHabitInfoLabel } from "../../controllers/transforms";
-import { DailyStatus, HabitUI } from "../../models/types";
+import { DailyStatus, HabitVM } from "../../models/v0";
 import { goToHabitPage, handleTap } from "../../controllers/utils";
 import { ColorDot } from "./ColorDot";
 
 type DayHabitTileProps = {
-  habit: HabitUI;
+  habit: HabitVM;
   day: Date;
   onColorDotClick: () => void;
 };

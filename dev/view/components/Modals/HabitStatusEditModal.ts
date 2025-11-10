@@ -1,14 +1,14 @@
 import { compute, derive, dispose, trap } from "@cyftech/signal";
 import { component, m } from "@mufw/maya";
 import { getDayStatus } from "../../../controllers/transforms";
-import { HabitUI } from "../../../models/types";
+import { HabitVM } from "../../../models/v0";
 import { handleTap } from "../../../controllers/utils";
 import { Modal } from "../../elements";
 import { ColorDot } from "../ColorDot";
 
 type HabitStatusEditModalProps = {
   isOpen: boolean;
-  habit: HabitUI;
+  habit: HabitVM;
   date: Date;
   showTitleInHeader?: boolean;
   onClose?: () => void;

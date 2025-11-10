@@ -1,11 +1,11 @@
 import {
-  Analytics,
-  LevelUI,
-  LocalSettings,
-  MilestonesData,
+  AnalyticsV0,
+  LevelVM,
+  SettingsV0,
+  Milestones,
   StorageDetails,
-  WeekdayFrequency,
-} from "../models/types";
+  WeekScheduleV0,
+} from "../models/v0";
 
 export const APP_VERSION = "1.3.0";
 
@@ -18,9 +18,9 @@ export const BASE_COLORS = [
   `#D89DBF`,
 ] as const satisfies string[];
 
-export const BASE_WEEKDAY_FREQUENCY: WeekdayFrequency = [1, 1, 1, 1, 1, 1, 1];
+export const BASE_WEEKDAY_FREQUENCY: WeekScheduleV0 = [1, 1, 1, 1, 1, 1, 1];
 
-export const SYSTEM_DEFINED_LEVELS: LevelUI[] = [
+export const SYSTEM_DEFINED_LEVELS: LevelVM[] = [
   {
     name: "Not Applicable",
     code: -1,
@@ -42,14 +42,14 @@ export const BASE_LEVELS = [
   "Completed",
 ] as const satisfies string[];
 
-export const BASE_MILESTONES: MilestonesData = [70, 60, 45];
+export const BASE_MILESTONES: Milestones = [70, 60, 45];
 
-export const INITIAL_ANALYTICS: Analytics = {
+export const INITIAL_ANALYTICS: AnalyticsV0 = {
   id: "analytics",
   lastInteraction: new Date().getTime(),
 };
 
-export const INITIAL_SETTINGS: LocalSettings = {
+export const INITIAL_SETTINGS: SettingsV0 = {
   id: "local-settings",
   habitsPage: {
     tabIndex: 0,

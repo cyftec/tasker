@@ -1,12 +1,12 @@
 import { dispose, tmpl } from "@cyftech/signal";
 import { component, m } from "@mufw/maya";
 import { deleteHabit } from "../../../controllers/localstorage";
-import { HabitUI } from "../../../models/types";
+import { HabitVM } from "../../../models/v0";
 import { Button, Modal } from "../../elements";
 
 type HabitDeleteModalProps = {
   isOpen: boolean;
-  habit: HabitUI;
+  habit: HabitVM;
   onClose: () => void;
   onDone: () => void;
 };

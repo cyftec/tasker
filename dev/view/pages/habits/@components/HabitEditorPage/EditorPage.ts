@@ -11,7 +11,7 @@ import {
   getNewHabit,
   getUpdatedTrackerDataForModifiedLevels,
 } from "../../../../../controllers/transforms";
-import { HabitUI } from "../../../../../models/types";
+import { HabitVM } from "../../../../../models/v0";
 import {
   GoBackButton,
   HabitDeleteModal,
@@ -23,7 +23,7 @@ import { Button, Link, Scaffold } from "../../../../elements";
 import { HabitEditor } from "./HabitEditor";
 
 type HabitEditorPageProps = {
-  editableHabit?: HabitUI;
+  editableHabit?: HabitVM;
   onMount?: () => void;
 };
 
@@ -33,7 +33,7 @@ export const HabitEditorPage = component<HabitEditorPageProps>(
     const deleteActionModalOpen = signal(false);
     const stopActionModalOpen = signal(false);
     const error = signal("");
-    const editedHabit = signal<HabitUI>(getNewHabit());
+    const editedHabit = signal<HabitVM>(getNewHabit());
     const pageTitle = compute(
       (edHab) => (edHab ? `Edit '${edHab.title}'` : "Add new habit"),
       editableHabit
@@ -58,7 +58,7 @@ export const HabitEditorPage = component<HabitEditorPageProps>(
       history.back();
     };
 
-    const onHabitChange = (updatedHabit: HabitUI) =>
+    const onHabitChange = (updatedHabit: HabitVM) =>
       (editedHabit.value = updatedHabit);
 
     const save = () => {
@@ -83,7 +83,7 @@ export const HabitEditorPage = component<HabitEditorPageProps>(
       if (onMount) {
         onMount();
         // After onMount in parent, 'editableHabit' gets loaded
-        editedHabit.value = editableHabit?.value as HabitUI;
+        editedHabit.value = editableHabit?.value as HabitVM;
       }
       editPageSettings.value = getEditPageSettings();
     };

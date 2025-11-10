@@ -1,9 +1,9 @@
 import { signal } from "@cyftech/signal";
-import { HabitUI } from "../../../../../models/types";
+import { HabitVM } from "../../../../../models/v0";
 import { getHabitFromUrl } from "../../../../../controllers/transforms";
 import { HabitEditorPage } from "../../@components";
 
-const editableHabit = signal<HabitUI | undefined>(undefined);
+const editableHabit = signal<HabitVM | undefined>(undefined);
 
 const onPageMount = () => {
   const fetchedHabit = getHabitFromUrl();

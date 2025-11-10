@@ -1,6 +1,6 @@
 import { phase } from "@mufw/maya/utils";
 import { INITIAL_SETTINGS, INITIAL_STORAGE_DATA } from "../constants";
-import { LocalSettings, StorageDetails } from "../../models/types";
+import { SettingsV0, StorageDetails } from "../../models/v0";
 import { parseObjectJsonString } from "../utils";
 import { validLocalStorageKeys } from "./core";
 import { validHabitRecordKey } from "./habits";
@@ -9,16 +9,16 @@ const LS_SETTINGS_KEY = "settings";
 const LS_SETTINGS_ID_KEY = "id";
 const LS_SETTINGS_ID_VALUE = "local-settings";
 
-export const updateSettings = (settings: LocalSettings) => {
+export const updateSettings = (settings: SettingsV0) => {
   localStorage.setItem(LS_SETTINGS_KEY, JSON.stringify(settings));
 };
 
-export const fetchSettings = (): LocalSettings => {
+export const fetchSettings = (): SettingsV0 => {
   if (!phase.currentIs("run")) return INITIAL_SETTINGS;
 
   const getSettingsFromStore = () => {
     const settingsString = localStorage.getItem(LS_SETTINGS_KEY);
-    const settingsObject = parseObjectJsonString<LocalSettings>(
+    const settingsObject = parseObjectJsonString<SettingsV0>(
       settingsString,
       LS_SETTINGS_ID_KEY,
       LS_SETTINGS_ID_VALUE
@@ -30,19 +30,8 @@ export const fetchSettings = (): LocalSettings => {
   if (!settingsObject) updateSettings(INITIAL_SETTINGS);
   const settings = getSettingsFromStore();
   if (!settings) throw `Error fetching settings`;
-  addFutureUpgradesIfMissing(settings);
 
-  return getSettingsFromStore() as LocalSettings;
-};
-
-export const addFutureUpgradesIfMissing = (settings: LocalSettings) => {
-  // v1 upgrade
-  if (!settings.editPage) {
-    updateSettings({
-      ...settings,
-      editPage: INITIAL_SETTINGS.editPage,
-    });
-  }
+  return getSettingsFromStore() as SettingsV0;
 };
 
 export const getStorageSpaceData = (): StorageDetails => {

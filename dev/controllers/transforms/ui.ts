@@ -16,14 +16,14 @@ import {
 import {
   AchievedMilestone,
   DailyStatus,
-  Habit,
-  HabitUI,
+  HabitV0,
+  HabitVM,
   LevelCompletion,
-  LevelUI,
-  MilestonesData,
-  MilestonesUI,
+  LevelVM,
+  Milestones,
+  MilestonesVM,
   NavbarLink,
-} from "../../models/types";
+} from "../../models/v0";
 import { getQueryParamValue } from "../utils/navigation";
 import {
   areSameDates,
@@ -41,7 +41,7 @@ import {
 
 const GOLDEN_RATIO = 1.6181;
 
-export const getHabitFromUrl = (): HabitUI | undefined => {
+export const getHabitFromUrl = (): HabitVM | undefined => {
   const idString = getQueryParamValue("id");
   const id = +idString;
   if (isNaN(id) || !id) return;
@@ -56,18 +56,17 @@ export const getHabitFromUrl = (): HabitUI | undefined => {
 export const getSystemDefinedLevel = (levelCode: number) =>
   SYSTEM_DEFINED_LEVELS.find((sysLevel) => sysLevel.code === levelCode);
 
-export const getLevelUI = (level: number, levels: string[]): LevelUI => {
-  return level < 0
-    ? (getSystemDefinedLevel(-1) as LevelUI)
+export const getLevelUI = (levelCode: number, levels: string[]): LevelVM => {
+  return levelCode < 0
+    ? (getSystemDefinedLevel(-1) as LevelVM)
     : {
-        isMaxLevel: level === levels.length - 1,
-        name: levels[level],
-        code: level,
+        isMaxLevel: levelCode === levels.length - 1,
+        name: levels[levelCode],
+        code: levelCode,
       };
 };
 
 export const getEmptyDailyStatus = (date: Date): DailyStatus => ({
-  key: date.getTime(),
   level: getLevelUI(-1, []),
   date: date,
 });
@@ -77,7 +76,6 @@ export const getDailyStatus = (
   levels: string[],
   date: Date
 ): DailyStatus => ({
-  key: date.getTime(),
   level: getLevelUI(level, levels),
   date: date,
 });
@@ -85,7 +83,7 @@ export const getDailyStatus = (
 export const getDayStatus = (tracker: DailyStatus[], date: Date) =>
   tracker.find((status) => areSameDates(status.date, date));
 
-export const getHabitsForDate = (date: Date): HabitUI[] =>
+export const getHabitsForDate = (date: Date): HabitVM[] =>
   fetchHabits().filter((hab) => {
     const isNotStopped = !hab.isStopped;
     const weekdayScheduleMatches = hab.frequency[date.getDay()];
@@ -94,7 +92,7 @@ export const getHabitsForDate = (date: Date): HabitUI[] =>
     return isNotStopped && weekdayScheduleMatches && dateNotOutsideExistence;
   });
 
-export const getHabitUI = (habit: Habit): HabitUI => {
+export const getHabitUI = (habit: HabitV0): HabitVM => {
   const startDate = getMomentZeroDate(new Date(habit.id));
   return {
     ...habit,
@@ -111,7 +109,7 @@ export const getHabitUI = (habit: Habit): HabitUI => {
   };
 };
 
-export const getHabitData = (uiHabit: HabitUI): Habit => {
+export const getHabitData = (uiHabit: HabitVM): HabitV0 => {
   return {
     ...uiHabit,
     levels: uiHabit.levels.map((level) => level.name),
@@ -120,9 +118,9 @@ export const getHabitData = (uiHabit: HabitUI): Habit => {
   };
 };
 
-export const getNewHabit = (): HabitUI => {
+export const getNewHabit = (): HabitVM => {
   const now = new Date().getTime();
-  const habit: Habit = {
+  const habit: HabitV0 = {
     id: now,
     title: "",
     frequency: BASE_WEEKDAY_FREQUENCY,
@@ -130,14 +128,13 @@ export const getNewHabit = (): HabitUI => {
     levels: BASE_LEVELS,
     tracker: [],
     milestones: BASE_MILESTONES,
-    pauses: [],
     isStopped: false,
   };
 
   return getHabitUI(habit);
 };
 
-export const getMilestonesUI = (milestones: MilestonesData): MilestonesUI => [
+export const getMilestonesUI = (milestones: Milestones): MilestonesVM => [
   {
     label: "Successful",
     upperLimit: 100,
@@ -168,13 +165,11 @@ export const getMilestonesUI = (milestones: MilestonesData): MilestonesUI => [
   },
 ];
 
-export const getMilestonesData = (milestones: MilestonesUI): MilestonesData =>
-  milestones
-    .filter((ms) => !!ms.percent)
-    .map((ms) => ms.percent) as MilestonesData;
+export const getMilestonesData = (milestones: MilestonesVM): Milestones =>
+  milestones.filter((ms) => !!ms.percent).map((ms) => ms.percent) as Milestones;
 
 export const getAchievedMilestone = (
-  allMilestones: MilestonesUI,
+  allMilestones: MilestonesVM,
   completionPercentage: number
 ): AchievedMilestone => {
   let milestone = allMilestones[0];
@@ -190,7 +185,7 @@ export const getAchievedMilestone = (
 };
 
 export const getHabitValidationError = (
-  habit: HabitUI,
+  habit: HabitVM,
   editingNewHabit?: boolean
 ): string => {
   if (!habit.title) {
@@ -229,7 +224,7 @@ export const getHabitValidationError = (
 };
 
 export const getCompletion = (
-  habit: HabitUI,
+  habit: HabitVM,
   startDate: Date,
   endDate: Date
 ) => {
@@ -278,8 +273,8 @@ export const getCompletion = (
 };
 
 export const getAddRemoveButtonsVisibility = (
-  oldLevels: LevelUI[],
-  updatedLevels: LevelUI[],
+  oldLevels: LevelVM[],
+  updatedLevels: LevelVM[],
   currentLevelIndex: number
 ) => {
   const oldLevelsExist = !!oldLevels.length;
@@ -312,8 +307,8 @@ export const getAddRemoveButtonsVisibility = (
 };
 
 export const levelTextboxDisability = (
-  oldLevels: LevelUI[],
-  updatedLevels: LevelUI[],
+  oldLevels: LevelVM[],
+  updatedLevels: LevelVM[],
   currentLevelIndex: number
 ) => {
   const oldLevelsExist = !!oldLevels.length;
@@ -355,7 +350,7 @@ export const getColorsForLevel = (
 };
 
 export const updateHabitStatus = (
-  habit: HabitUI,
+  habit: HabitVM,
   levelCode: number,
   date: Date
 ) => {
@@ -404,7 +399,7 @@ export const getHabitStatusBetweenDates = (
   return getHabitStatusForDates(habitTracker, dates);
 };
 
-export const getFullWeekStatusFilled = (habit: HabitUI) => {
+export const getFullWeekStatusFilled = (habit: HabitVM) => {
   const firstSunday = getSunday(new Date(habit.id));
   const lastSaturday = getSaturday(new Date());
   const fullWeekTracker = getHabitStatusBetweenDates(
@@ -415,7 +410,7 @@ export const getFullWeekStatusFilled = (habit: HabitUI) => {
   return { ...habit, tracker: fullWeekTracker };
 };
 
-export const getWeekwiseStatus = (habit: HabitUI) => {
+export const getWeekwiseStatus = (habit: HabitVM) => {
   const fullWeekFilledStatusTracker = getFullWeekStatusFilled(habit);
   const weeklyTracker: DailyStatus[][] = [];
 
@@ -473,18 +468,18 @@ export const getHabitInfoLabel = (habitId: number) => {
 };
 
 export const getUpdatedTrackerDataForModifiedLevels = (
-  oldLevels: LevelUI[],
-  newLevels: LevelUI[],
+  oldLevels: LevelVM[],
+  newLevels: LevelVM[],
   tracker: DailyStatus[]
 ) => {
   if (!oldLevels.length || oldLevels.length === newLevels.length)
     return tracker;
   const updatedTracker = [...tracker];
-  const updates: { indices: number[]; newLevel: LevelUI }[] = [];
+  const updates: { indices: number[]; newLevel: LevelVM }[] = [];
   oldLevels.forEach((oldLevel, oldLevelIndex) => {
     const newLevel = newLevels.find((l) => l.name === oldLevel.name);
     const oldLevelRemoved = !newLevel;
-    const registerUpdates = (changedLevel: LevelUI) => {
+    const registerUpdates = (changedLevel: LevelVM) => {
       const indices: number[] = [];
       tracker.forEach((status, i) => {
         if (status.level.code === oldLevel.code) indices.push(i);
@@ -519,7 +514,7 @@ export const getUpdatedTrackerDataForModifiedLevels = (
 };
 
 export const getSanitizedLevelsAfterAddOrRemove = (
-  modifiedLevels: LevelUI[]
+  modifiedLevels: LevelVM[]
 ) => {
   const newMaxIndex = modifiedLevels.length - 1;
   for (let i = 0; i < modifiedLevels.length; i++) {
@@ -538,7 +533,7 @@ export const isLastInteractionLongBack = () => {
   return now - lastIntrxn > getMinutesInMS(1);
 };
 
-export const getHabitsStatusForTheDay = (habits: HabitUI[], date: Date) => {
+export const getHabitsStatusForTheDay = (habits: HabitVM[], date: Date) => {
   const statuses = habits.map(
     (hab) => getDayStatus(hab.tracker, date) as DailyStatus
   );
@@ -557,7 +552,7 @@ export const getHabitsStatusForTheDay = (habits: HabitUI[], date: Date) => {
 };
 
 export const getHabitsStatusLabelForTheDay = (
-  habits: HabitUI[],
+  habits: HabitVM[],
   date: Date
 ) => {
   const status = getHabitsStatusForTheDay(habits, date);
@@ -577,10 +572,10 @@ export const getHabitsStatusLabelForTheDay = (
 };
 
 export const getSortedHabits = (
-  habits: HabitUI[],
+  habits: HabitVM[],
   sortOptionIndex: number,
   totalMonths: number
-): HabitUI[] => {
+): HabitVM[] => {
   const selectedOption = HOMEPAGE_SORT_OPTIONS[sortOptionIndex];
   const { startDate, endDate } = getDateWindow(totalMonths);
   const optionLabel = selectedOption.label;
@@ -601,7 +596,7 @@ export const getSortedHabits = (
   return sortedHabitsWithCompletion;
 };
 
-export const getLevelsCompletionList = (habit: HabitUI): LevelCompletion[] => {
+export const getLevelsCompletionList = (habit: HabitVM): LevelCompletion[] => {
   const initialLevelsCompletion = habit.levels.map((_) => 0);
 
   const levelsCompletionCount = habit.tracker.reduce((arr, status) => {

@@ -2,7 +2,7 @@ import { dispose, op, tmpl } from "@cyftech/signal";
 import { component, m } from "@mufw/maya";
 import { goToHref, handleTap } from "../../controllers/utils";
 import { Icon } from "../elements";
-import { NavbarLink } from "../../models/types";
+import { NavbarLink } from "../../models/v0";
 
 type NavBarProps = {
   cssClasses?: string;
