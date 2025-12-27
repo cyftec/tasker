@@ -1,17 +1,22 @@
-import { KvStore, LOCALSTORAGE_AS_KVSTORE } from "../kv-store";
+import { KvStore, LOCALSTORAGE_AS_KVSTORE, StorageDetails } from "../kv-store";
 import { InflatedRecord, TableKey } from "../models";
 import { Table, TableFieldMapping, TableType } from "./table";
 
-export type DatabaseSchema<> = {
+export type DatabaseSchema = {
   [TableName in string]: {
     key: TableKey;
     type: TableType;
     structure: InflatedRecord<any>;
+    default?: InflatedRecord<any>;
     mappings?: Record<string, TableFieldMapping>;
   };
 };
 
 export type DatabaseInstance<Schema extends DatabaseSchema> = {
+  _meta: {
+    storage: StorageDetails;
+  };
+} & {
   [TableName in keyof Schema]: Table<Schema[TableName]["structure"]>;
 };
 
@@ -21,7 +26,13 @@ export const openDb = <Schema extends DatabaseSchema>(
   kvStore?: KvStore
 ): DatabaseInstance<Schema> => {
   const store: KvStore = kvStore || LOCALSTORAGE_AS_KVSTORE;
-  const dbInstance: DatabaseInstance<Schema> = {} as DatabaseInstance<Schema>;
+  const dbInstance: DatabaseInstance<Schema> = {
+    _meta: {
+      get storage() {
+        return store.getStorageDetails();
+      },
+    },
+  } as DatabaseInstance<Schema>;
 
   const getTableFromTableKey = (key: TableKey) => {
     const tableName = Object.keys(schema).find(
@@ -46,7 +57,8 @@ export const openDb = <Schema extends DatabaseSchema>(
         getTableFromTableKey,
         mappings
       );
-      dbInstance[tableName as keyof DatabaseInstance<Schema>] = table;
+      dbInstance[tableName as keyof Schema] =
+        table as DatabaseInstance<Schema>[keyof Schema];
     } catch (error) {
       console.log(`error happened during building table - ${tableName}`);
     }

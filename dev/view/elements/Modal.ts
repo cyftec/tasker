@@ -1,5 +1,5 @@
 import { tmpl, effect, dispose } from "@cyftech/signal";
-import { type Children, component, m } from "@mufw/maya";
+import { type Children, component, m, MHtmlElement } from "@mufw/maya";
 import { handleTap } from "../../controllers/utils";
 
 type ModalProps = {
@@ -14,11 +14,12 @@ export const Modal = component<ModalProps>(
   ({ cssClasses, isOpen, content, onTapOutside, onUnmount }) => {
     const classes = tmpl`pa0 br3 ${cssClasses}`;
 
-    const onDialogMount = (dialogElem) => {
+    const onDialogMount = (dialogElem: MHtmlElement<HTMLElement>) => {
       setTimeout(() =>
         effect(() => {
-          if (isOpen.value) dialogElem.showModal();
-          else dialogElem.close();
+          if (isOpen.value)
+            (dialogElem as MHtmlElement<HTMLDialogElement>).showModal();
+          else (dialogElem as MHtmlElement<HTMLDialogElement>).close();
         })
       );
     };

@@ -1,6 +1,9 @@
 import { InflatedStructuredRecord } from "../../../_kvdb";
 
 export type Settings = {
+  analytics: {
+    lastInteraction: number;
+  };
   habitsPage: {
     tabIndex: number;
     sortOptionIndex: number;
@@ -11,14 +14,8 @@ export type Settings = {
   };
 };
 
-export type PageName = "editPage" | "habitsPage";
-export type Setting<Page extends keyof Settings> = InflatedStructuredRecord<{
-  page: Page;
-  data: Pick<Settings, Page>[Page];
+export type SettingType = keyof Settings;
+export type Setting<SType extends SettingType> = InflatedStructuredRecord<{
+  type: SType;
+  data: Pick<Settings, SType>[SType];
 }>;
-
-export type StorageDetails = {
-  total: number;
-  spaceLeft: number;
-  documents: Record<string, number>;
-};

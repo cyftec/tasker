@@ -5,7 +5,6 @@ export type Milestones = [number, number, number];
 export type HabitV0 = {
   id: number;
   isStopped: boolean;
-  startDate: Date;
   title: string;
   colorIndex: number;
   frequency: WeekScheduleV0;

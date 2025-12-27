@@ -1,13 +1,14 @@
 import { phase } from "@mufw/maya/utils";
+import { HabitV0, HabitVM } from "../../models/v0";
+import { Setting } from "../../models/v1/data-models";
 import { INITIAL_ANALYTICS } from "../constants";
+import { db } from "../databases/db";
 import {
   areSameDates,
   getDaysGap,
   getHabitData,
   getHabitUI,
 } from "../transforms";
-import { HabitV0, HabitVM, SettingsV0, StorageDetails } from "../../models/v0";
-import { fetchAnalytics, updateAnalytics } from "./analytics";
 import {
   fetchHabitsFromStore,
   fetchHabitWithKey,
@@ -15,9 +16,6 @@ import {
   hardDeleteHabitFromStore,
   saveHabitInStore,
 } from "./habits";
-import { fetchSettings, getStorageSpaceData, updateSettings } from "./settings";
-import { Setting } from "../../models/v1/data-models";
-import { db } from "../databases/db";
 
 /**
  *
@@ -55,7 +53,7 @@ export const updateInteractionTime = (date: Date) => {
  */
 
 export const getHabitsPageSettings = (): Setting<"habitsPage">["data"] => {
-  const settings = db.settings.find((s) => s.page === "habitsPage");
+  const settings = db.settings.find((s) => s.type === "habitsPage");
   if (!settings) throw `Failed to fetch habits-page settings from DB`;
   return settings.data as Setting<"habitsPage">["data"];
 };
@@ -63,13 +61,13 @@ export const getHabitsPageSettings = (): Setting<"habitsPage">["data"] => {
 export const updateHabitsPageSettings = (
   habitsPageSettingsData: Setting<"habitsPage">["data"]
 ) => {
-  const settings = db.settings.find((s) => s.page === "habitsPage");
+  const settings = db.settings.find((s) => s.type === "habitsPage");
   if (!settings) throw `Failed to fetch habits-page settings from DB`;
   db.settings.put({ ...settings, ...habitsPageSettingsData });
 };
 
 export const getEditPageSettings = (): Setting<"editPage">["data"] => {
-  const settings = db.settings.find((s) => s.page === "editPage");
+  const settings = db.settings.find((s) => s.type === "editPage");
   if (!settings) throw `Failed to fetch edit-page settings from DB`;
   return settings.data as Setting<"editPage">["data"];
 };
@@ -77,12 +75,10 @@ export const getEditPageSettings = (): Setting<"editPage">["data"] => {
 export const updateEditPageSettings = (
   editPageSettingsData: Setting<"editPage">["data"]
 ) => {
-  const settings = db.settings.find((s) => s.page === "editPage");
+  const settings = db.settings.find((s) => s.type === "editPage");
   if (!settings) throw `Failed to fetch edit-page settings from DB`;
   db.settings.put({ ...settings, ...editPageSettingsData });
 };
-
-export const getStorageData = (): StorageDetails => getStorageSpaceData();
 
 /**
  *

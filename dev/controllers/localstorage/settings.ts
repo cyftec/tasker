@@ -1,9 +1,7 @@
 import { phase } from "@mufw/maya/utils";
-import { INITIAL_SETTINGS, INITIAL_STORAGE_DATA } from "../constants";
-import { SettingsV0, StorageDetails } from "../../models/v0";
+import { SettingsV0 } from "../../models/v0";
+import { INITIAL_SETTINGS } from "../constants";
 import { parseObjectJsonString } from "../utils";
-import { validLocalStorageKeys } from "./core";
-import { validHabitRecordKey } from "./habits";
 
 const LS_SETTINGS_KEY = "settings";
 const LS_SETTINGS_ID_KEY = "id";
@@ -32,29 +30,4 @@ export const fetchSettings = (): SettingsV0 => {
   if (!settings) throw `Error fetching settings`;
 
   return getSettingsFromStore() as SettingsV0;
-};
-
-export const getStorageSpaceData = (): StorageDetails => {
-  const storageData: StorageDetails = INITIAL_STORAGE_DATA;
-  if (!phase.currentIs("run")) return storageData;
-
-  const BYTES_PER_KB = 1024;
-  let totalBytes = 0;
-  const getKbFromBytes = (bytes: number) => bytes / BYTES_PER_KB;
-  for (const lsKey of validLocalStorageKeys()) {
-    const singleRecordBytes = (localStorage[lsKey].length + lsKey.length) * 2;
-    const documentKey = validHabitRecordKey(lsKey) ? "habits" : lsKey;
-
-    totalBytes += singleRecordBytes;
-    storageData.documents[documentKey] =
-      (storageData.documents[documentKey]
-        ? storageData.documents[documentKey]
-        : 0) + singleRecordBytes;
-  }
-
-  storageData.total = getKbFromBytes(totalBytes);
-  storageData.spaceLeft =
-    (100 * (5 * 1024 * 1024 - totalBytes)) / (5 * 1024 * 1024);
-
-  return storageData;
 };

@@ -72,7 +72,7 @@ const onHabitStatusChange = (levelCode: number) => {
   selectedDate.value = new Date(selectedDate.value.getTime() + 1);
 };
 
-const transitionToHabitsPage = () => {
+const transitionToHomePage = () => {
   itsTimeToRefresh.value = isLastInteractionLongBack();
   const progressMax = 100;
   const progressInterval = 10;
@@ -93,7 +93,7 @@ const triggerPageDataRefresh = () => {
 };
 
 const onPageMount = () => {
-  transitionToHabitsPage();
+  transitionToHomePage();
   intializeTrackerEmptyDays();
   triggerPageDataRefresh();
   window.addEventListener("pageshow", triggerPageDataRefresh);

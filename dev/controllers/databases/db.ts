@@ -1,4 +1,4 @@
-import { openDb, DatabaseSchema } from "../../_kvdb";
+import { openDb } from "../../_kvdb";
 import {
   Analytics,
   Habit,
@@ -89,6 +89,7 @@ export const dbschema = {
 const flatDb = openDb(dbschema, fromV0ToV1);
 
 export const db = {
+  _meta: flatDb._meta,
   settings: flatDb.settings,
   analytics: flatDb.analytics,
   habits: {

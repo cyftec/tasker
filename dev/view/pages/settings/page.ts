@@ -1,31 +1,30 @@
 import { signal, tmpl, trap } from "@cyftech/signal";
 import { m } from "@mufw/maya";
-import {
-  APP_VERSION,
-  INITIAL_SETTINGS,
-  INITIAL_STORAGE_DATA,
-} from "../../../controllers/constants";
+import { APP_VERSION, INITIAL_SETTINGS } from "../../../controllers/constants";
 import {
   getEditPageSettings,
-  getStorageData,
   updateEditPageSettings,
 } from "../../../controllers/localstorage";
 import {
   goToPrivacyPolicyPage,
   saveAppDataAsFile,
 } from "../../../controllers/utils";
-import { StorageDetails } from "../../../models/v0";
 import { HTMLPage, NavScaffold, Section } from "../../components";
 import { Button, Divider, Icon, Link } from "../../elements";
 import { AppDataLoaderLink } from "./@components/AppDataLoaderLink";
 import { ToggleSetting } from "./@components/ToggleSetting";
+import { StorageDetails } from "../../../_kvdb";
+import { db } from "../../../controllers/databases/db";
 
 const editPageSettings = signal(INITIAL_SETTINGS.editPage);
 const { showHints, showFullCustomisation } = trap(editPageSettings).props;
-const storageSpace = signal<StorageDetails>(INITIAL_STORAGE_DATA);
+const storageSpace = signal<StorageDetails>({
+  total: 1,
+  occupied: 0,
+});
 const storageSpaceLabel = tmpl`${() =>
-  storageSpace.value.total?.toFixed(2)} KB used (${() =>
-  storageSpace.value.spaceLeft?.toFixed(2)}% left)`;
+  storageSpace.value.occupied?.toFixed(2)} Bytes used out of (${() =>
+  storageSpace.value.total?.toFixed(2)}% Bytes)`;
 
 const onEditPageHintsSettingToggle = () => {
   updateEditPageSettings({
@@ -44,7 +43,7 @@ const onEditPageCustomisationsSettingToggle = () => {
 };
 
 const onPageMount = () => {
-  storageSpace.value = getStorageData();
+  storageSpace.value = db._meta.storage;
   editPageSettings.value = getEditPageSettings();
 };
 

@@ -4,7 +4,7 @@ import {
   Habit,
   HabitLevel,
   HabitStatus,
-  PageName,
+  SettingType,
   Setting,
   StatusTracker,
   WeekSchedule,
@@ -42,13 +42,13 @@ const getSettings = (settingsV0Key: string) => {
   const settingsV0 = JSON.parse(
     localStorage.getItem(settingsV0Key) || ""
   ) as SettingsV0;
-  const settings: Setting<PageName>[] = Object.entries(settingsV0)
+  const settings: Setting<SettingType>[] = Object.entries(settingsV0)
     .map(([key, value]) => {
       if (key === "id") return;
       return {
         id: 0,
-        page: key as PageName,
-        data: value as Setting<PageName>["data"],
+        page: key as SettingType,
+        data: value as Setting<SettingType>["data"],
       };
     })
     .filter((s) => !!s);
@@ -85,7 +85,7 @@ export const fromV0ToV1 = () => {
   if (currentVersion !== "v0") return;
   const oldDB: Record<string, string> = {};
   const habits: Habit[] = [];
-  const settings: Setting<PageName>[] = [];
+  const settings: Setting<SettingType>[] = [];
   let migrationSuccessful = false;
   let analytics: Analytics = {
     id: 0,

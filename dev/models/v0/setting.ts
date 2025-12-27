@@ -14,9 +14,3 @@ export type AnalyticsV0 = {
   id: "analytics";
   lastInteraction: number;
 };
-
-export type StorageDetails = {
-  total: number;
-  spaceLeft: number;
-  documents: Record<string, number>;
-};

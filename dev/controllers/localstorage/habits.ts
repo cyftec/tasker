@@ -1,7 +1,6 @@
 import { phase } from "@mufw/maya/utils";
 import { HabitV0, StoreHabitRecordKey } from "../../models/v0";
 import { parseObjectJsonString } from "../utils";
-import { validLocalStorageKeys } from "./core";
 
 export const validHabitRecordKey = (localStorageKey: string) =>
   localStorageKey.startsWith("h.");
@@ -20,10 +19,7 @@ export const fetchHabitWithKey = (
 };
 
 export const checkNoHabitsInStore = () => {
-  for (const lsKey of validLocalStorageKeys()) {
-    if (validHabitRecordKey(lsKey)) return false;
-  }
-
+  // DELETED CODE: only check if localstorage is completely empty or not
   return true;
 };
 
