@@ -7,7 +7,6 @@ export type DatabaseSchema = {
     key: TableKey;
     type: TableType;
     structure: InflatedRecord<any>;
-    default?: InflatedRecord<any>;
     mappings?: Record<string, TableFieldMapping>;
   };
 };
