@@ -47,7 +47,7 @@ const getSettings = (settingsV0Key: string) => {
       if (key === "id") return;
       return {
         id: 0,
-        page: key as SettingType,
+        type: key as SettingType,
         data: value as Setting<SettingType>["data"],
       };
     })

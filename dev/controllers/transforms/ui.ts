@@ -123,6 +123,7 @@ export const getNewHabit = (): HabitVM => {
   const habit: HabitV0 = {
     id: now,
     title: "",
+    startDate: new Date(),
     frequency: BASE_WEEKDAY_FREQUENCY,
     colorIndex: 0,
     levels: BASE_LEVELS,
