@@ -1,7 +1,7 @@
 import {
   DB_UNSUPPORTED_TYPES,
   InflatedRecord,
-  DbRecordID,
+  TableRecordID,
   DbUnsupportedType,
   NumBoolean,
   DeflatedStructuredRecord,
@@ -94,15 +94,15 @@ export const getDeflatedUnsupportedValues = <
 };
 
 export const getInflatedForeignRecords = (
-  deflatedValue: DbRecordID | DbRecordID[],
+  deflatedValue: TableRecordID | TableRecordID[],
   table: Table<InflatedRecord<any>>
 ) => {
-  // deflatedValue can only be undefined | DbRecordID | DbRecordID[]
+  // deflatedValue can only be undefined | TableRecordID | TableRecordID[]
   if (typeof deflatedValue === "number")
-    return table.get(deflatedValue as DbRecordID);
+    return table.get(deflatedValue as TableRecordID);
   if (Array.isArray(deflatedValue)) {
     return deflatedValue.length
-      ? table.get(deflatedValue as DbRecordID[])
+      ? table.get(deflatedValue as TableRecordID[])
       : deflatedValue;
   }
   return deflatedValue;
@@ -207,7 +207,7 @@ export class RecordMapper {
   }
 
   static toInflated<T>(
-    id: DbRecordID,
+    id: TableRecordID,
     record: T,
     isUnstructured: boolean,
     getForeignTableFromKey: (tableKey: TableKey) => Table<InflatedRecord<any>>,

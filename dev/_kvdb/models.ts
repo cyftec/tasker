@@ -8,15 +8,15 @@ export const UNSTRUCTURED_RECORD_VALUE_KEY = "value" as const satisfies string;
 
 export type IDKey = typeof ID_KEY;
 export type UnstructuredRecordValueKey = typeof UNSTRUCTURED_RECORD_VALUE_KEY;
-export type DbRecordID = number;
+export type TableRecordID = number;
 export type TableKey = string;
 export type KvsRecordKeyPrefix = `${TableKey}_`;
-export type KvsRecordKey = `${KvsRecordKeyPrefix}${DbRecordID}`;
+export type KvsRecordKey = `${KvsRecordKeyPrefix}${TableRecordID}`;
 export type DbUnsupportedType = "date" | "bool";
 export const DB_UNSUPPORTED_TYPES: DbUnsupportedType[] = ["date", "bool"];
 
 export type WithID<Record extends object> = {
-  [K in IDKey]: DbRecordID;
+  [K in IDKey]: TableRecordID;
 } & Record;
 
 /**

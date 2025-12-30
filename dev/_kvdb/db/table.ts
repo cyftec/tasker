@@ -1,6 +1,6 @@
 import { KvStore, KvStoreIDManager } from "../kv-store";
 import {
-  DbRecordID,
+  TableRecordID,
   DbUnsupportedType,
   InflatedRecord,
   TableKey,
@@ -28,7 +28,7 @@ type RecordMappings<Inflated extends InflatedRecord<any>> = Partial<{
 
 type GetResponse<ReqIDs, Inflated> = undefined extends ReqIDs
   ? Inflated[]
-  : ReqIDs extends DbRecordID
+  : ReqIDs extends TableRecordID
   ? Inflated | undefined
   : Inflated[];
 
@@ -57,18 +57,20 @@ export class Table<Inflated extends InflatedRecord<any>> {
     this.mappings = mappings;
   }
 
-  private getAllIDs(): DbRecordID[] {
-    const kvStoreKeys = this.kvStore.getAllKeys();
-    const validIDs: DbRecordID[] = [];
-    for (const id of kvStoreKeys) {
-      const validDbRecordID = RecordIdMapper.fromKvsToDb(this.key, id);
-      if (validDbRecordID === undefined) continue;
-      validIDs.push(validDbRecordID);
-    }
-    return validIDs;
+  private iterateRecords(
+    iterator: (thisTableRecordID: TableRecordID) => boolean
+  ): void {
+    let recordCount = 0;
+    this.kvStore.iterate((kvsKey) => {
+      const validTableRecordID = RecordIdMapper.fromKvsToDb(this.key, kvsKey);
+      if (validTableRecordID === undefined) return true;
+      recordCount++;
+      const continueIterating = iterator(validTableRecordID);
+      return continueIterating;
+    });
   }
 
-  private getDeflatedRecord(id: DbRecordID): any {
+  private getDeflatedRecord(id: TableRecordID): any {
     if (id === 0) throw `Record with id - '0' tried to be fetched.`;
     const kvsRecordKey = RecordIdMapper.fromDbToKvs(this.key, id);
     const kvsRecordValue = this.kvStore.getItem(kvsRecordKey);
@@ -77,7 +79,7 @@ export class Table<Inflated extends InflatedRecord<any>> {
     return record;
   }
 
-  private getSingleRecord(id: DbRecordID): Inflated | undefined {
+  private getSingleRecord(id: TableRecordID): Inflated | undefined {
     let deflatedRecord = this.getDeflatedRecord(id);
     if (!deflatedRecord) return;
 
@@ -90,22 +92,31 @@ export class Table<Inflated extends InflatedRecord<any>> {
     ) as Inflated;
   }
 
-  private getAllRecords(ids?: DbRecordID[]): Inflated[] {
-    const validIDs: DbRecordID[] = ids?.length ? ids : this.getAllIDs();
+  private getAllRecords(ids?: TableRecordID[]): Inflated[] {
     const records: Inflated[] = [];
-    for (const id of validIDs) {
+    const addRecord = (id: TableRecordID) => {
       const record = this.getSingleRecord(id);
-      if (!record) continue;
+      if (!record) return;
       records.push(record);
-    }
+    };
+
+    if (ids?.length) ids.forEach(addRecord);
+    else
+      this.iterateRecords((id) => {
+        addRecord(id);
+        return true;
+      });
+
     return records;
   }
 
   get count() {
-    return this.getAllIDs().length;
+    let total = 0;
+    this.iterateRecords((_) => !!total++);
+    return total;
   }
 
-  get<ReqIDs extends DbRecordID | DbRecordID[] | undefined>(
+  get<ReqIDs extends TableRecordID | TableRecordID[] | undefined>(
     requestedIDorIDs?: ReqIDs
   ): GetResponse<ReqIDs, Inflated> {
     return (
@@ -116,17 +127,14 @@ export class Table<Inflated extends InflatedRecord<any>> {
   }
 
   filter(recordMatcher: RecordMatcher<Inflated>, count?: number): Inflated[] {
-    const validIDs: DbRecordID[] = this.getAllIDs();
     const matchingRecords: Inflated[] = [];
-    const idsLength = validIDs.length;
-    const recordsLength = count || idsLength;
-    for (const id of validIDs) {
+    this.iterateRecords((id) => {
       const record = this.getSingleRecord(id);
-      if (!record) continue;
+      if (!record) return true;
       const recordMatched = recordMatcher(record);
       if (recordMatched) matchingRecords.push(record);
-      if (matchingRecords.length === recordsLength) break;
-    }
+      return count ? matchingRecords.length < count : true;
+    });
     return matchingRecords;
   }
 
@@ -135,7 +143,7 @@ export class Table<Inflated extends InflatedRecord<any>> {
   }
 
   put(inflatedRecord: Inflated): Inflated {
-    let recordID: DbRecordID = inflatedRecord.id;
+    let recordID: TableRecordID = inflatedRecord.id;
     const isNewRecord = RecordValidation.isRecordNew(inflatedRecord);
     if (isNewRecord) RecordValidation.validateNewRecord(inflatedRecord, this);
 
@@ -147,7 +155,7 @@ export class Table<Inflated extends InflatedRecord<any>> {
     );
     const kvsRecordValue = JSON.stringify(kvsMappedRecord);
 
-    const kvsRecordUpdator = (id: DbRecordID) => {
+    const kvsRecordUpdator = (id: TableRecordID) => {
       const kvsRecordKey = RecordIdMapper.fromDbToKvs(this.key, id);
       this.kvStore.setItem(kvsRecordKey, kvsRecordValue);
     };
@@ -161,8 +169,8 @@ export class Table<Inflated extends InflatedRecord<any>> {
     return this.get(recordID) as Inflated;
   }
 
-  delete(dbRecordID: DbRecordID): void {
-    const kvsRecordKey = RecordIdMapper.fromDbToKvs(this.key, dbRecordID);
+  delete(tableRecordID: TableRecordID): void {
+    const kvsRecordKey = RecordIdMapper.fromDbToKvs(this.key, tableRecordID);
     this.kvStore.removeItem(kvsRecordKey);
   }
 }

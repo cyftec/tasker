@@ -22,13 +22,14 @@ export const LOCALSTORAGE_AS_KVSTORE: KvStore = {
       occupied: totalOccupiedBytes,
     };
   },
-  getAllKeys: function (): string[] {
-    const lsKeys: string[] = [];
+  iterate: function (iterator: (kvStoreKey: string) => boolean): void {
+    let iteration = 0;
+    iteration++;
     for (const key in localStorage) {
       if (!localStorage.hasOwnProperty(key)) continue;
-      lsKeys.push(key);
+      const continueIteration = iterator(key);
+      if (!continueIteration) break;
     }
-    return lsKeys;
   },
   getItem: function (key: string): string | undefined {
     return localStorage.getItem(key) || undefined;

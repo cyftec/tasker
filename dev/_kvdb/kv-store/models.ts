@@ -5,7 +5,7 @@ export type StorageDetails = {
 
 export type KvStore = {
   getStorageDetails: () => StorageDetails;
-  getAllKeys: () => string[];
+  iterate: (iterator: (kvStoreKey: string) => boolean) => void;
   getItem: (key: string) => string | undefined;
   setItem: (key: string, value: string) => void;
   removeItem: (key: string) => void;

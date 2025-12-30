@@ -1,5 +1,5 @@
 import {
-  DbRecordID,
+  TableRecordID,
   KvsRecordKey,
   KvsRecordKeyPrefix,
   TableKey,
@@ -17,15 +17,18 @@ export class RecordIdMapper {
   static fromKvsToDb(
     tableKey: TableKey,
     kvStoreKey: string
-  ): DbRecordID | undefined {
+  ): TableRecordID | undefined {
     const recordIDPrefix = this.getKvsRecordKeyPrefix(tableKey);
     if (!kvStoreKey.startsWith(recordIDPrefix)) return;
     const recordIdStr = kvStoreKey.split(recordIDPrefix)[1] || "";
     return this.parseNum(recordIdStr);
   }
 
-  static fromDbToKvs(tableKey: TableKey, dbRecordID: DbRecordID): KvsRecordKey {
+  static fromDbToKvs(
+    tableKey: TableKey,
+    tableRecordID: TableRecordID
+  ): KvsRecordKey {
     const recordIDPrefix = this.getKvsRecordKeyPrefix(tableKey);
-    return `${recordIDPrefix}${dbRecordID}`;
+    return `${recordIDPrefix}${tableRecordID}`;
   }
 }

@@ -1,5 +1,5 @@
 import { KvStore } from ".";
-import { DbRecordID } from "../models";
+import { TableRecordID } from "../models";
 
 export class KvStoreIDManager {
   private kvStore: KvStore;
@@ -8,7 +8,7 @@ export class KvStoreIDManager {
     this.kvStore = kvStore;
   }
 
-  getCurrentID(): DbRecordID {
+  getCurrentID(): TableRecordID {
     let maxID = this.kvStore.getItem("maxID");
     if (!maxID) this.kvStore.setItem("maxID", "0");
     maxID = this.kvStore.getItem("maxID");
@@ -17,7 +17,7 @@ export class KvStoreIDManager {
     return +maxID;
   }
 
-  useNewID(callback: (newId: DbRecordID) => void): DbRecordID {
+  useNewID(callback: (newId: TableRecordID) => void): TableRecordID {
     const newID = this.getCurrentID() + 1;
     callback(newID);
     this.kvStore.setItem("maxID", `${newID}`);
