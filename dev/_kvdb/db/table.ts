@@ -112,7 +112,7 @@ export class Table<Inflated extends InflatedRecord<any>> {
 
   get count() {
     let total = 0;
-    this.iterateRecords((_) => !!total++);
+    this.iterateRecords((_) => !!++total);
     return total;
   }
 
