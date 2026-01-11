@@ -1,22 +1,15 @@
 import { KvStore, KvStoreIDManager } from "../kv-store";
 import {
-  TableRecordID,
-  DbUnsupportedType,
   InflatedRecord,
+  TableFieldMapping,
   TableKey,
+  TableRecordID,
+  TableType,
+  UNSTRUCTURED_TABLE_TYPES,
+  UnstructuredTableType,
 } from "../models";
-import { RecordIdMapper, RecordMapper } from "./record-mapping";
-import { RecordValidation } from "./record-validation";
-
-export type TableType = "structured" | "unstructured";
-
-export type ForeignTableMapping = {
-  type: "foreigntable";
-  tableKey: TableKey;
-  owned: boolean;
-};
-export type DbUnsupportedTypeMapping = { type: DbUnsupportedType };
-export type TableFieldMapping = ForeignTableMapping | DbUnsupportedTypeMapping;
+import { RecordIdMapper, RecordTransformer } from "./record-mapping";
+import { ValidateTableOperation } from "./table-operation-validator";
 
 type TableGetter = (tableKey: TableKey) => Table<InflatedRecord<any>>;
 
@@ -34,27 +27,32 @@ type GetResponse<ReqIDs, Inflated> = undefined extends ReqIDs
 
 export class Table<Inflated extends InflatedRecord<any>> {
   private kvStore: KvStore;
-  private isUnstructured: boolean;
+  private tableKey: TableKey;
+  isUnstructured: boolean;
+  newItem: Inflated;
   private kvsIdManager: KvStoreIDManager;
+  private validate: ValidateTableOperation<Inflated>;
   private getForeignTableFromKey: TableGetter;
   private mappings?: RecordMappings<Inflated>;
-  key: TableKey;
-  type: TableType;
 
   constructor(
     kvStore: KvStore,
+    getForeignTableFromKey: TableGetter,
     tableKey: TableKey,
     tableType: TableType,
-    getForeignTableFromKey: TableGetter,
+    newItem: Inflated,
     mappings?: RecordMappings<Inflated>
   ) {
     this.kvStore = kvStore;
-    this.type = tableType;
-    this.key = tableKey;
-    this.isUnstructured = tableType === "unstructured";
+    this.tableKey = tableKey;
+    this.isUnstructured = UNSTRUCTURED_TABLE_TYPES.includes(
+      tableType as UnstructuredTableType
+    );
+    this.newItem = newItem;
     this.kvsIdManager = new KvStoreIDManager(kvStore);
     this.getForeignTableFromKey = getForeignTableFromKey;
     this.mappings = mappings;
+    this.validate = new ValidateTableOperation(this);
   }
 
   private iterateRecords(
@@ -62,7 +60,10 @@ export class Table<Inflated extends InflatedRecord<any>> {
   ): void {
     let recordCount = 0;
     this.kvStore.iterate((kvsKey) => {
-      const validTableRecordID = RecordIdMapper.fromKvsToDb(this.key, kvsKey);
+      const validTableRecordID = RecordIdMapper.fromKvsToDb(
+        this.tableKey,
+        kvsKey
+      );
       if (validTableRecordID === undefined) return true;
       recordCount++;
       const continueIterating = iterator(validTableRecordID);
@@ -71,8 +72,7 @@ export class Table<Inflated extends InflatedRecord<any>> {
   }
 
   private getDeflatedRecord(id: TableRecordID): any {
-    if (id === 0) throw `Record with id - '0' tried to be fetched.`;
-    const kvsRecordKey = RecordIdMapper.fromDbToKvs(this.key, id);
+    const kvsRecordKey = RecordIdMapper.fromDbToKvs(this.tableKey, id);
     const kvsRecordValue = this.kvStore.getItem(kvsRecordKey);
     if (kvsRecordValue === undefined) return;
     const record = JSON.parse(kvsRecordValue);
@@ -83,7 +83,7 @@ export class Table<Inflated extends InflatedRecord<any>> {
     let deflatedRecord = this.getDeflatedRecord(id);
     if (!deflatedRecord) return;
 
-    return RecordMapper.toInflated(
+    return RecordTransformer.toInflated(
       id,
       deflatedRecord,
       this.isUnstructured,
@@ -110,6 +110,29 @@ export class Table<Inflated extends InflatedRecord<any>> {
     return records;
   }
 
+  private put(inflatedRecord: Inflated, isNew: boolean): Inflated {
+    let recordID: TableRecordID = inflatedRecord.id;
+    const kvsRecord = RecordTransformer.toDeflated(
+      inflatedRecord,
+      this.getForeignTableFromKey,
+      this.mappings
+    );
+    const kvsRecordValue = JSON.stringify(kvsRecord);
+
+    const kvsRecordUpdator = (id: TableRecordID) => {
+      const kvsRecordKey = RecordIdMapper.fromDbToKvs(this.tableKey, id);
+      this.kvStore.setItem(kvsRecordKey, kvsRecordValue);
+    };
+
+    if (isNew) {
+      recordID = this.kvsIdManager.useNewID(kvsRecordUpdator);
+    } else {
+      kvsRecordUpdator(recordID);
+    }
+
+    return this.get(recordID) as Inflated;
+  }
+
   get count() {
     let total = 0;
     this.iterateRecords((_) => !!++total);
@@ -119,6 +142,7 @@ export class Table<Inflated extends InflatedRecord<any>> {
   get<ReqIDs extends TableRecordID | TableRecordID[] | undefined>(
     requestedIDorIDs?: ReqIDs
   ): GetResponse<ReqIDs, Inflated> {
+    this.validate.getOperation(requestedIDorIDs);
     return (
       typeof requestedIDorIDs === "number"
         ? this.getSingleRecord(requestedIDorIDs)
@@ -142,35 +166,22 @@ export class Table<Inflated extends InflatedRecord<any>> {
     return this.filter(recordMatcher, 1)[0];
   }
 
-  put(inflatedRecord: Inflated): Inflated {
-    let recordID: TableRecordID = inflatedRecord.id;
-    const isNewRecord = RecordValidation.isRecordNew(inflatedRecord);
-    if (isNewRecord) RecordValidation.validateNewRecord(inflatedRecord, this);
+  add(inflatedRecord: Inflated): Inflated {
+    this.validate.addOperation(inflatedRecord);
+    return this.put(inflatedRecord, true);
+  }
 
-    const kvsMappedRecord = RecordMapper.toDeflated(
-      inflatedRecord,
-      this.isUnstructured,
-      this.getForeignTableFromKey,
-      this.mappings
-    );
-    const kvsRecordValue = JSON.stringify(kvsMappedRecord);
-
-    const kvsRecordUpdator = (id: TableRecordID) => {
-      const kvsRecordKey = RecordIdMapper.fromDbToKvs(this.key, id);
-      this.kvStore.setItem(kvsRecordKey, kvsRecordValue);
-    };
-
-    if (recordID === 0) {
-      recordID = this.kvsIdManager.useNewID(kvsRecordUpdator);
-    } else {
-      kvsRecordUpdator(recordID);
-    }
-
-    return this.get(recordID) as Inflated;
+  update(inflatedRecord: Inflated): Inflated {
+    this.validate.updateOperation(inflatedRecord);
+    return this.put(inflatedRecord, false);
   }
 
   delete(tableRecordID: TableRecordID): void {
-    const kvsRecordKey = RecordIdMapper.fromDbToKvs(this.key, tableRecordID);
+    this.validate.deleteOperation(tableRecordID);
+    const kvsRecordKey = RecordIdMapper.fromDbToKvs(
+      this.tableKey,
+      tableRecordID
+    );
     this.kvStore.removeItem(kvsRecordKey);
   }
 }

@@ -1,6 +1,6 @@
-import { InflatedStructuredRecord } from "../../../_kvdb";
+import { InflatedUnstructuredRecord } from "../../../_kvdb";
 
-export type Settings = {
+export type Settings = InflatedUnstructuredRecord<{
   analytics: {
     lastInteraction: number;
   };
@@ -12,10 +12,21 @@ export type Settings = {
     showHints: boolean;
     showFullCustomisation: boolean;
   };
-};
-
-export type SettingType = keyof Settings;
-export type Setting<SType extends SettingType> = InflatedStructuredRecord<{
-  type: SType;
-  data: Pick<Settings, SType>[SType];
 }>;
+
+export const INITIAL_SETTINGS: Settings = {
+  id: 0,
+  value: {
+    analytics: {
+      lastInteraction: new Date().getTime(),
+    },
+    habitsPage: {
+      tabIndex: 0,
+      sortOptionIndex: 0,
+    },
+    editPage: {
+      showHints: false,
+      showFullCustomisation: false,
+    },
+  },
+};

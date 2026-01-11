@@ -1,32 +1,26 @@
 import { KvStore, LOCALSTORAGE_AS_KVSTORE, StorageDetails } from "../kv-store";
-import { InflatedRecord, TableKey } from "../models";
-import { Table, TableFieldMapping, TableType } from "./table";
+import { DatabaseSchema, TableKey } from "../models";
+import { Table } from "./table";
 
-export type DatabaseSchema = {
-  [TableName in string]: {
-    key: TableKey;
-    type: TableType;
-    structure: InflatedRecord<any>;
-    mappings?: Record<string, TableFieldMapping>;
-  };
-};
-
-export type DatabaseInstance<Schema extends DatabaseSchema> = {
+type DatabaseInstance<Schema extends DatabaseSchema> = {
   _meta: {
+    version: number;
     storage: StorageDetails;
   };
 } & {
-  [TableName in keyof Schema]: Table<Schema[TableName]["structure"]>;
+  [TableName in keyof Schema]: Table<Schema[TableName]["newItem"]>;
 };
 
 export const openDb = <Schema extends DatabaseSchema>(
   schema: Schema,
+  version: number,
   migration?: () => void,
   kvStore?: KvStore
 ): DatabaseInstance<Schema> => {
   const store: KvStore = kvStore || LOCALSTORAGE_AS_KVSTORE;
   const dbInstance: DatabaseInstance<Schema> = {
     _meta: {
+      version: version,
       get storage() {
         return store.getStorageDetails();
       },
@@ -48,13 +42,13 @@ export const openDb = <Schema extends DatabaseSchema>(
 
   Object.entries(schema).forEach(([tableName, tableDetails]) => {
     try {
-      const { key: tableKey, type: tableType, mappings } = tableDetails;
       const table = new Table(
         store,
-        tableKey,
-        tableType,
         getTableFromTableKey,
-        mappings
+        tableDetails.key,
+        tableDetails.type,
+        tableDetails.newItem,
+        tableDetails.mappings
       );
       dbInstance[tableName as keyof Schema] =
         table as DatabaseInstance<Schema>[keyof Schema];

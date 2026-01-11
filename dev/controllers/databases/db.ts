@@ -1,17 +1,14 @@
 import { openDb } from "../../_kvdb";
 import {
-  Analytics,
-  Habit,
-  HabitExcuse,
-  HabitLevel,
-  HabitStatus,
-  Setting,
-  Settings,
-  StatusTracker,
+  INITIAL_EXCUSES,
+  INITIAL_HABIT,
+  INITIAL_LEVEL,
+  INITIAL_SETTINGS,
+  INITIAL_STATUSES,
+  INITIAL_TRACKER,
 } from "../../models/v1/data-models";
 import { fromV0ToV1 } from "./migrations/fromV0";
 
-const ANALYTICS_TABLE_KEY = "anal";
 const SETTINGS_TABLE_KEY = "sett";
 const HABIT_STATUSES_TABLE_KEY = "hs";
 const HABIT_EXCUSES_TABLE_KEY = "hx";
@@ -20,31 +17,32 @@ const STATUS_TRACKERS_TABLE_KEY = "ht";
 const HABITS_TABLE_KEY = "hh";
 
 export const dbschema = {
-  analytics: {
-    key: ANALYTICS_TABLE_KEY,
-    structure: {} as Analytics,
-    type: "unstructured",
-  },
   settings: {
     key: SETTINGS_TABLE_KEY,
-    structure: {} as Setting<keyof Settings>,
-    type: "structured",
-  },
-  habitStatuses: {
-    key: HABIT_STATUSES_TABLE_KEY,
-    structure: {} as HabitStatus,
-    type: "unstructured",
-    mappings: {},
+    newItem: INITIAL_SETTINGS,
+    type: "monolith",
   },
   habitExcuses: {
     key: HABIT_EXCUSES_TABLE_KEY,
-    structure: {} as HabitExcuse,
-    type: "unstructured",
+    newItem: INITIAL_EXCUSES[0],
+    type: "distinct",
+    mappings: {},
+  },
+  habitStatuses: {
+    key: HABIT_STATUSES_TABLE_KEY,
+    newItem: INITIAL_STATUSES[0],
+    type: "distinct",
+    mappings: {},
+  },
+  habitTrackers: {
+    key: STATUS_TRACKERS_TABLE_KEY,
+    newItem: INITIAL_TRACKER,
+    type: "distinct",
     mappings: {},
   },
   habitLevels: {
     key: HABIT_LEVELS_TABLE_KEY,
-    structure: {} as HabitLevel,
+    newItem: INITIAL_LEVEL,
     type: "structured",
     mappings: {
       status: {
@@ -54,21 +52,15 @@ export const dbschema = {
       },
     },
   },
-  habitTrackers: {
-    key: STATUS_TRACKERS_TABLE_KEY,
-    structure: {} as StatusTracker,
-    type: "unstructured",
-    mappings: {},
-  },
   habits: {
     key: HABITS_TABLE_KEY,
-    structure: {} as Habit,
+    newItem: INITIAL_HABIT,
     type: "structured",
     mappings: {
       isStopped: { type: "bool" },
       schedule: { type: "bool" },
       startDate: { type: "date" },
-      "levels.status": {
+      levels: {
         type: "foreigntable",
         tableKey: HABIT_STATUSES_TABLE_KEY,
         owned: false,
@@ -86,12 +78,11 @@ export const dbschema = {
     },
   },
 } as const;
-const flatDb = openDb(dbschema, fromV0ToV1);
+const flatDb = openDb(dbschema, 1, fromV0ToV1);
 
 export const db = {
   _meta: flatDb._meta,
   settings: flatDb.settings,
-  analytics: flatDb.analytics,
   habits: {
     statuses: flatDb.habitStatuses,
     excuses: flatDb.habitExcuses,

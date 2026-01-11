@@ -5,15 +5,8 @@ export type NumBoolean = 0 | 1;
 
 export const ID_KEY = "id" as const satisfies string;
 export const UNSTRUCTURED_RECORD_VALUE_KEY = "value" as const satisfies string;
-
 export type IDKey = typeof ID_KEY;
 export type UnstructuredRecordValueKey = typeof UNSTRUCTURED_RECORD_VALUE_KEY;
-export type TableRecordID = number;
-export type TableKey = string;
-export type KvsRecordKeyPrefix = `${TableKey}_`;
-export type KvsRecordKey = `${KvsRecordKeyPrefix}${TableRecordID}`;
-export type DbUnsupportedType = "date" | "bool";
-export const DB_UNSUPPORTED_TYPES: DbUnsupportedType[] = ["date", "bool"];
 
 export type WithID<Record extends object> = {
   [K in IDKey]: TableRecordID;
@@ -89,3 +82,33 @@ export type DeflatedRecord<T extends InflatedRecord<any>> =
     : T extends InflatedStructuredRecord<object>
     ? DeflatedStructuredRecord<T>
     : never;
+
+export type TableRecordID = number;
+export type TableKey = string;
+export type KvsRecordKeyPrefix = `${TableKey}_`;
+export type KvsRecordKey = `${KvsRecordKeyPrefix}${TableRecordID}`;
+export type UnstructuredTableType = "distinct" | "monolith";
+export type TableType = "structured" | UnstructuredTableType;
+export const UNSTRUCTURED_TABLE_TYPES: UnstructuredTableType[] = [
+  "distinct",
+  "monolith",
+];
+export type DbUnsupportedType = "date" | "bool";
+export const DB_UNSUPPORTED_TYPES: DbUnsupportedType[] = ["date", "bool"];
+export type ForeignTableMapping = {
+  type: "foreigntable";
+  tableKey: TableKey;
+  owned: boolean;
+};
+export type DbUnsupportedTypeMapping = { type: DbUnsupportedType };
+export type TableFieldMapping = ForeignTableMapping | DbUnsupportedTypeMapping;
+
+export type DatabaseSchema = {
+  [TableName in string]: {
+    key: TableKey;
+    type: TableType;
+    // ideally it should be InflatedRecord<any>, but currently a workaround for type-safety
+    newItem: InflatedRecord<object>;
+    mappings?: Record<string, TableFieldMapping>;
+  };
+};

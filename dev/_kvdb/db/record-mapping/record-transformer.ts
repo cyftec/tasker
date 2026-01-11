@@ -1,21 +1,19 @@
 import {
   DB_UNSUPPORTED_TYPES,
-  InflatedRecord,
-  TableRecordID,
   DbUnsupportedType,
-  NumBoolean,
-  DeflatedStructuredRecord,
-  InflatedStructuredRecord,
-  TableKey,
-  InflatedUnstructuredRecord,
-  WithID,
   DeflatedRecord,
+  DeflatedStructuredRecord,
   ID_KEY,
+  InflatedRecord,
+  InflatedStructuredRecord,
+  NumBoolean,
+  TableFieldMapping,
+  TableKey,
+  TableRecordID,
   UNSTRUCTURED_RECORD_VALUE_KEY,
+  WithID,
 } from "../../models";
-import { Table, TableFieldMapping } from "../table";
-import { RecordValidation } from "../record-validation";
-import { Unstructured } from "../unstructured-record";
+import { Table } from "../table";
 
 const isValueDate = (dateOrDateString: any) => {
   if (dateOrDateString instanceof Date) return true;
@@ -36,19 +34,19 @@ export const getDeflatedForeignIds = <ForeignDbRecord extends object>(
     | WithID<ForeignDbRecord>[]
     | undefined,
   foreignTable: Table<InflatedRecord<any>>
-) => {
+): TableRecordID | TableRecordID[] | undefined => {
   if (Array.isArray(inflatedValue)) {
     return inflatedValue.map((rec) => {
       if (rec.id) return rec.id;
       if (rec.id === undefined) throw "Invalid extended foreign values list";
-      const newCreatedRecord = foreignTable.put(rec);
+      const newCreatedRecord = foreignTable.add(rec);
       return newCreatedRecord.id;
     });
   }
   if (typeof inflatedValue === "object" && inflatedValue !== null) {
     if (inflatedValue.id) return inflatedValue.id;
     if (inflatedValue.id === undefined) throw "Invalid extended foreign value";
-    const newCreatedRecord = foreignTable.put(inflatedValue);
+    const newCreatedRecord = foreignTable.add(inflatedValue);
     return newCreatedRecord.id;
   }
   return inflatedValue;
@@ -93,17 +91,15 @@ export const getDeflatedUnsupportedValues = <
   return inflatedValue as ReturnType<typeof inflatedValue>;
 };
 
-export const getInflatedForeignRecords = (
-  deflatedValue: TableRecordID | TableRecordID[],
-  table: Table<InflatedRecord<any>>
-) => {
+export const getInflatedForeignRecords = <Inflated extends InflatedRecord<any>>(
+  deflatedValue: TableRecordID | TableRecordID[] | undefined,
+  table: Table<Inflated>
+): Inflated | Inflated[] | undefined => {
   // deflatedValue can only be undefined | TableRecordID | TableRecordID[]
   if (typeof deflatedValue === "number")
     return table.get(deflatedValue as TableRecordID);
   if (Array.isArray(deflatedValue)) {
-    return deflatedValue.length
-      ? table.get(deflatedValue as TableRecordID[])
-      : deflatedValue;
+    return table.get(deflatedValue as TableRecordID[]);
   }
   return deflatedValue;
 };
@@ -111,21 +107,21 @@ export const getInflatedForeignRecords = (
 export const getInflatedUnsupportedValues = (
   deflatedValue: number | undefined,
   unsupportedType: DbUnsupportedType
-) => {
+): Date | Date[] | boolean | boolean[] | undefined => {
   // deflatedValue can only be one of DbUnsupportedType
   if (unsupportedType === "date" && typeof deflatedValue === "number") {
     return new Date(deflatedValue);
   }
-  if (unsupportedType === "date" && Array.isArray(deflatedValue)) {
-    return deflatedValue.map((date) => new Date(date));
-  }
   if (unsupportedType === "bool" && typeof deflatedValue === "number") {
     return !!deflatedValue;
+  }
+  if (unsupportedType === "date" && Array.isArray(deflatedValue)) {
+    return deflatedValue.map((date) => new Date(date));
   }
   if (unsupportedType === "bool" && Array.isArray(deflatedValue)) {
     return deflatedValue.map((numBool) => !!numBool);
   }
-  return deflatedValue;
+  return deflatedValue as undefined;
 };
 
 export const getMappedObject = (
@@ -164,23 +160,14 @@ export const getMappedObject = (
   return { ...obj, [firstKey]: mappedValue };
 };
 
-export class RecordMapper {
+export class RecordTransformer {
   static toDeflated<T extends InflatedRecord<any>>(
     record: T,
-    isUnstructured: boolean,
     getForeignTableFromKey: (tableKey: TableKey) => Table<InflatedRecord<any>>,
     mappings?: Partial<{
       [k in keyof T]: TableFieldMapping;
     }>
   ): DeflatedRecord<T> {
-    if (isUnstructured) {
-      if (!RecordValidation.isRecordUnstructured(record))
-        throw "Record is not an unstructured one as specified in the table";
-      return Unstructured.getRecordValue(
-        record as InflatedUnstructuredRecord<any>
-      );
-    }
-
     delete (record as DeflatedStructuredRecord<any>).id;
     if (!mappings) return record as DeflatedRecord<T>;
 

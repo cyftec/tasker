@@ -1,17 +1,37 @@
 import { AnalyticsV0, HabitV0, SettingsV0 } from "../../../models/v0";
 import {
-  Analytics,
   Habit,
   HabitLevel,
   HabitStatus,
-  SettingType,
-  Setting,
+  Settings,
   StatusTracker,
   WeekSchedule,
 } from "../../../models/v1/data-models";
 import { db } from "../db";
 
-const getHabitV1 = (habitV0Key: string) => {
+const getSettingsV1 = (
+  analyticsV0Key: string,
+  settingsV0Key: string
+): Settings => {
+  const analyticsV0 = JSON.parse(
+    localStorage.getItem(analyticsV0Key) || ""
+  ) as AnalyticsV0;
+  const settingsV0 = JSON.parse(
+    localStorage.getItem(settingsV0Key) || ""
+  ) as SettingsV0;
+  return {
+    id: 0,
+    value: {
+      analytics: {
+        lastInteraction: analyticsV0.lastInteraction,
+      },
+      editPage: settingsV0.editPage,
+      habitsPage: settingsV0.habitsPage,
+    },
+  };
+};
+
+const getHabitV1 = (habitV0Key: string): Habit => {
   const habitV0 = JSON.parse(localStorage.getItem(habitV0Key) || "") as HabitV0;
   if (!habitV0) throw `Habit of version 0 is either corrupted or failing.`;
   const statuses: HabitStatus[] = habitV0.levels.map((l, i) => {
@@ -38,93 +58,40 @@ const getHabitV1 = (habitV0Key: string) => {
   return habit;
 };
 
-const getSettings = (settingsV0Key: string) => {
-  const settingsV0 = JSON.parse(
-    localStorage.getItem(settingsV0Key) || ""
-  ) as SettingsV0;
-  const settings: Setting<SettingType>[] = Object.entries(settingsV0)
-    .map(([key, value]) => {
-      if (key === "id") return;
-      return {
-        id: 0,
-        type: key as SettingType,
-        data: value as Setting<SettingType>["data"],
-      };
-    })
-    .filter((s) => !!s);
-  return settings;
-};
-
-const getAnalytics = (analyticsV0Key: string): Analytics => {
-  const analyticsV0 = JSON.parse(
-    localStorage.getItem(analyticsV0Key) || ""
-  ) as AnalyticsV0;
-  return { id: 0, value: { lastInteraction: analyticsV0.lastInteraction } };
-};
-
-export const getCurrentVersion = () => {
-  // check version v0
-  const settingsString = localStorage.getItem("settings");
-  if (settingsString) {
-    const settings = JSON.parse(settingsString);
-    if (settings && (settings.editPage || settings.habitsPage)) return "v0";
-  }
-
-  // check version v1
-  // if()
-
-  if (!localStorage.length) return "new";
-
-  return "unknown";
+export const isCurrentVersionV0 = (): boolean => {
+  const analyticsV0 = localStorage.getItem("analytics");
+  if (analyticsV0) return true;
+  return false;
 };
 
 export const fromV0ToV1 = () => {
   if (!globalThis.localStorage) return;
-  const currentVersion = getCurrentVersion();
-  console.log(`current version is - ${currentVersion}`);
-  if (currentVersion !== "v0") return;
-  const oldDB: Record<string, string> = {};
-  const habits: Habit[] = [];
-  const settings: Setting<SettingType>[] = [];
-  let migrationSuccessful = false;
-  let analytics: Analytics = {
-    id: 0,
-    value: { lastInteraction: new Date().getTime() },
-  };
+  if (!isCurrentVersionV0()) return;
 
+  let migrationSuccessful = false;
+  const oldDbBackup: Record<string, string> = {};
+
+  const settings: Settings = getSettingsV1("analytics", "settings");
+  const habits: Habit[] = [];
   for (const key in localStorage) {
     if (!localStorage.hasOwnProperty(key)) continue;
-    oldDB[key] = localStorage.getItem(key) || "";
-    // localStorage.removeItem(key);
-  }
-
-  for (let key in oldDB) {
-    if (key === "settings") {
-      getSettings(key).forEach((s) => settings.push(s));
-    } else if (key === "analytics") {
-      analytics = getAnalytics(key);
-    } else if (key.startsWith("h.")) {
+    oldDbBackup[key] = localStorage.getItem(key) || "";
+    if (key.startsWith("h.")) {
       habits.push(getHabitV1(key));
-    } else {
-      console.log(`Unknown key found in localStorage - '${key}'`);
     }
   }
 
+  localStorage.clear();
   try {
-    localStorage.clear();
-    // TODO: implement singleton to avoid duplicate add
-    db.analytics.put(analytics);
-    settings.forEach((setting) => db.settings.put(setting));
-    habits.forEach((habit) => db.habits.list.put(habit));
+    db.settings.add(settings);
+    habits.forEach((habit) => db.habits.list.add(habit));
     migrationSuccessful = true;
   } catch (error) {
     console.log(error);
   }
 
-  if (!migrationSuccessful) {
-    localStorage.clear();
-    for (let key in oldDB) {
-      localStorage.setItem(key, oldDB[key]);
-    }
+  if (migrationSuccessful) return;
+  for (let key in oldDbBackup) {
+    localStorage.setItem(key, oldDbBackup[key]);
   }
 };
